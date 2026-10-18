@@ -40,7 +40,7 @@ async function loadFeed() {
     authorId: p.author_id,
     caption: p.caption,
     createdAt: p.created_at,
-    media: [...p.cat_post_media].sort((a, b) => a.order - b.order).map((m) => ({ ...m, src: urls[m.url] })),
+    media: [...p.cat_post_media].sort((a, b) => a.order - b.order).map((m) => ({ ...m, src: urls[m.url], postId: p.id, authorId: p.author_id })),
     catIds: p.cat_post_cats.map((c) => c.cat_id),
     reactions: p.reactions,
     commentCount: p.comments[0]?.count ?? 0,
@@ -100,6 +100,14 @@ export async function createPost({ files = [], catIds = [], caption = '', me, pa
     notify('message', { text: post.caption });
   }
   return post;
+}
+
+/** Removes one photo/video; a message left with nothing in it goes too. */
+export async function deleteMediaItem(item, post) {
+  await removeMedia([item.url]);
+  await supabase.from('cat_post_media').delete().eq('id', item.id);
+  const rest = post.media.filter((m) => m.id !== item.id);
+  if (!rest.length && !post.caption) await supabase.from('cat_posts').delete().eq('id', post.id);
 }
 
 export async function deletePost(post) {

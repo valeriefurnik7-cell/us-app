@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Link, Segmented, SegmentedButton, Sheet, Toggle, Toolbar } from 'konsta/react';
 import { Camera } from 'framework7-icons/react';
 import { Field, FieldGroup, TextInput } from '../FormRows';
+import DateRangePicker from '../DateRangePicker';
 import { useSession } from '../SessionProvider';
 import { TRIP_STATUSES, addQuickTrip, saveTrip } from '@/lib/trips';
 import { errorMessage } from '@/lib/supabase';
@@ -73,13 +74,16 @@ function TripForm({ trip, onClose }) {
           <Field label="Where">
             <TextInput value={form.destination} placeholder="Milan" onChange={set('destination')} />
           </Field>
-          <Field label="From">
-            <TextInput type="date" value={form.start} onChange={set('start')} />
-          </Field>
-          <Field label="To">
-            <TextInput type="date" value={form.end} onChange={set('end')} />
-          </Field>
         </FieldGroup>
+
+        {/* Whole period in one calendar; open-ended trips allowed */}
+        <div className="mx-4 mt-4">
+          <DateRangePicker
+            openEnded
+            value={{ start: form.start, end: form.end, noEnd: Boolean(trip && trip.start && !trip.end) }}
+            onChange={({ start, end }) => setForm((f) => ({ ...f, start, end }))}
+          />
+        </div>
 
         <div className="mx-4 mt-6">
           <Segmented strong rounded>
@@ -142,13 +146,10 @@ function QuickForm({ onClose }) {
           <Field label="City">
             <TextInput value={form.city} placeholder="Prague" onChange={set('city')} />
           </Field>
-          <Field label="From">
-            <TextInput type="date" value={form.start} onChange={set('start')} />
-          </Field>
-          <Field label="To">
-            <TextInput type="date" value={form.end} onChange={set('end')} />
-          </Field>
         </FieldGroup>
+        <div className="mx-4 mt-4">
+          <DateRangePicker openEnded value={form} onChange={({ start, end }) => setForm((f) => ({ ...f, start, end }))} />
+        </div>
       </div>
     </>
   );

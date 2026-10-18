@@ -9,7 +9,7 @@ import { useSession } from '@/components/SessionProvider';
 import PetSheet, { FAVORITES } from '@/components/pets/PetSheet';
 import MediaViewer from '@/components/pets/MediaViewer';
 import UploadSheet, { useMediaPicker } from '@/components/pets/UploadSheet';
-import { SPECIES, petStreak, usePets, useFeed } from '@/lib/pets';
+import { SPECIES, deleteMediaItem, petStreak, usePets, useFeed } from '@/lib/pets';
 import { ageFrom } from '@/lib/dates';
 
 function Stat({ value, label }) {
@@ -148,6 +148,11 @@ export default function PetPage({ params }) {
         items={gallery}
         startIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
+        canDelete={(item) => item.authorId === me.id}
+        onDelete={async (item) => {
+          await deleteMediaItem(item, posts.find((p) => p.id === item.postId));
+          feed.reload();
+        }}
       />
     </Screen>
   );

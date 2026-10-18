@@ -12,7 +12,8 @@ import MessageBubble from '@/components/pets/MessageBubble';
 import MediaViewer from '@/components/pets/MediaViewer';
 import UploadSheet, { useMediaPicker } from '@/components/pets/UploadSheet';
 import PetSheet from '@/components/pets/PetSheet';
-import { REACTIONS, createPost, deletePost, pairStreak, toggleReaction, usePets, useFeed } from '@/lib/pets';
+import CommentsSheet from '@/components/pets/CommentsSheet';
+import { REACTIONS, createPost, deleteMediaItem, deletePost, pairStreak, toggleReaction, usePets, useFeed } from '@/lib/pets';
 import { dayKey } from '@/lib/dates';
 
 const NO_MESSAGES = [];
@@ -124,6 +125,7 @@ export default function PetsPage() {
   const [viewer, setViewer] = useState(null); // { items, index }
   const [menuPost, setMenuPost] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [commentsFor, setCommentsFor] = useState(null); // the message whose comments are open
   const picker = useMediaPicker(setUploadFiles);
   const lastCount = useRef(0);
 
@@ -187,6 +189,7 @@ export default function PetsPage() {
                 showAuthor={newDay || prev.authorId !== post.authorId}
                 onOpenMedia={(items, index) => setViewer({ items, index })}
                 onMenu={setMenuPost}
+                onComments={setCommentsFor}
               />
             </Fragment>
           );
@@ -203,8 +206,26 @@ export default function PetsPage() {
           feed.reload();
         }}
       />
+      <CommentsSheet
+        postId={commentsFor?.id ?? null}
+        postAuthorId={commentsFor?.authorId}
+        onClose={() => {
+          setCommentsFor(null);
+          feed.reload();
+        }}
+      />
       <PetSheet opened={addingPet} pet={null} onClose={() => setAddingPet(false)} onSaved={pets.reload} />
-      <MediaViewer opened={Boolean(viewer)} items={viewer?.items ?? []} startIndex={viewer?.index ?? 0} onClose={() => setViewer(null)} />
+      <MediaViewer
+        opened={Boolean(viewer)}
+        items={viewer?.items ?? []}
+        startIndex={viewer?.index ?? 0}
+        onClose={() => setViewer(null)}
+        canDelete={(item) => item.authorId === me.id}
+        onDelete={async (item) => {
+          await deleteMediaItem(item, messages.find((p) => p.id === item.postId));
+          feed.reload();
+        }}
+      />
 
       {/* Long press: react or delete */}
       <Actions opened={Boolean(menuPost)} onBackdropClick={() => setMenuPost(null)}>
@@ -229,6 +250,14 @@ export default function PetsPage() {
               );
             })}
           </div>
+          <ActionsButton
+            onClick={() => {
+              setCommentsFor(menuPost);
+              setMenuPost(null);
+            }}
+          >
+            {menuPost?.commentCount ? `Comments (${menuPost.commentCount})` : 'Comment'}
+          </ActionsButton>
           {menuPost?.caption && (
             <ActionsButton
               onClick={() => {

@@ -25,7 +25,7 @@ function ProfilePets({ ownerId, isMe }) {
   return (
     <>
       <BlockTitle>Pets</BlockTitle>
-      <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-1">
+      <div className="no-scrollbar mt-2 flex gap-3 overflow-x-auto px-4 pb-1">
         {pets.loading
           ? [0, 1].map((i) => <div key={i} className="h-36 w-28 shrink-0 animate-pulse rounded-card bg-surface" />)
           : mine.map((pet) => (

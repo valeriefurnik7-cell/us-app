@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { HeartFill, Paw, PlayFill } from 'framework7-icons/react';
+import { ChatBubble, HeartFill, Paw, PlayFill } from 'framework7-icons/react';
 import Avatar from '../Avatar';
 import { useSession } from '../SessionProvider';
 import { addHeart } from '@/lib/pets';
@@ -124,7 +124,7 @@ function ReactionPill({ reactions, mine }) {
  * One chat message. Mine on the right in the accent color, hers on the left.
  * Tap photo = fullscreen, double tap = heart, long press = reactions & delete.
  */
-export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onMenu }) {
+export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onMenu, onComments }) {
   const { me, partner } = useSession();
   const mine = post.authorId === me.id;
   const author = mine ? me : partner;
@@ -169,6 +169,16 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
           )}
         </div>
         <ReactionPill reactions={post.reactions} mine={mine} />
+        {post.commentCount > 0 && (
+          <button
+            type="button"
+            onClick={() => onComments(post)}
+            className="mt-1 flex h-7 items-center gap-1 px-1 text-caption font-semibold text-text-secondary"
+          >
+            <ChatBubble className="text-[13px]" />
+            {post.commentCount === 1 ? 'View 1 comment' : `View ${post.commentCount} comments`}
+          </button>
+        )}
         <span className="mt-0.5 px-1 text-[11px] text-text-secondary">{timeOf(post.createdAt)}</span>
       </div>
     </div>

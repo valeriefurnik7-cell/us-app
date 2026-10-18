@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Popup } from 'konsta/react';
-import { SquareArrowUp, Xmark } from 'framework7-icons/react';
+import { SquareArrowUp, Trash, Xmark } from 'framework7-icons/react';
+import { Actions, ActionsButton, ActionsGroup, ActionsLabel } from 'konsta/react';
 
 // iOS saves to Photos through the share sheet ("Save Image" / "Save Video").
 async function saveToPhotos(item) {
@@ -20,10 +21,14 @@ async function saveToPhotos(item) {
   URL.revokeObjectURL(a.href);
 }
 
-/** Fullscreen photos/videos, swipe between them. items: [{ src, type }] */
-export default function MediaViewer({ items, startIndex = 0, opened, onClose }) {
+/**
+ * Fullscreen photos/videos, swipe between them. items: [{ src, type }].
+ * With onDelete, items that canDelete(item) get a trash button (asks first).
+ */
+export default function MediaViewer({ items, startIndex = 0, opened, onClose, canDelete, onDelete }) {
   const scroller = useRef(null);
   const [index, setIndex] = useState(startIndex);
+  const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
     if (!opened || !scroller.current) return;
@@ -61,6 +66,16 @@ export default function MediaViewer({ items, startIndex = 0, opened, onClose }) 
           >
             <Xmark className="text-[20px]" />
           </button>
+          {current && onDelete && canDelete?.(current) && (
+            <button
+              type="button"
+              aria-label="Delete photo"
+              onClick={() => setConfirm(true)}
+              className="ms-auto me-2 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md"
+            >
+              <Trash className="text-[19px]" />
+            </button>
+          )}
           {current && (
             <button
               type="button"
@@ -72,6 +87,27 @@ export default function MediaViewer({ items, startIndex = 0, opened, onClose }) 
             </button>
           )}
         </div>
+
+        <Actions opened={confirm} onBackdropClick={() => setConfirm(false)}>
+          <ActionsGroup>
+            <ActionsLabel>Delete this {current?.type === 'video' ? 'video' : 'photo'} for both of you?</ActionsLabel>
+            <ActionsButton
+              className="text-danger!"
+              onClick={async () => {
+                setConfirm(false);
+                await onDelete(current);
+                onClose();
+              }}
+            >
+              Delete
+            </ActionsButton>
+          </ActionsGroup>
+          <ActionsGroup>
+            <ActionsButton bold onClick={() => setConfirm(false)}>
+              Cancel
+            </ActionsButton>
+          </ActionsGroup>
+        </Actions>
 
         {items.length > 1 && (
           <div className="absolute inset-x-0 bottom-[max(24px,var(--k-safe-area-bottom))] text-center text-subhead text-white/80">

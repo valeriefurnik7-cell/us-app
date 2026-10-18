@@ -6,11 +6,13 @@ import Screen, { EmptyState } from '@/components/Screen';
 import { InnerNavbar } from '@/components/AppNavbar';
 import { useLastMainScreen } from '@/components/AppShell';
 import MediaViewer from '@/components/pets/MediaViewer';
-import { usePets, useFeed } from '@/lib/pets';
+import { deleteMediaItem, usePets, useFeed } from '@/lib/pets';
+import { useSession } from '@/components/SessionProvider';
 
 /** Every pet photo and video ever sent, newest first, filterable by pet. */
 export default function PetPhotosPage() {
   const lastMain = useLastMainScreen();
+  const { me } = useSession();
   const pets = usePets();
   const feed = useFeed();
   const [pet, setPet] = useState(null);
@@ -67,7 +69,17 @@ export default function PetPhotosPage() {
         </div>
       )}
 
-      <MediaViewer opened={viewerIndex !== null} items={media} startIndex={viewerIndex ?? 0} onClose={() => setViewerIndex(null)} />
+      <MediaViewer
+        opened={viewerIndex !== null}
+        items={media}
+        startIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+        canDelete={(item) => item.authorId === me.id}
+        onDelete={async (item) => {
+          await deleteMediaItem(item, feed.data.find((p) => p.id === item.postId));
+          feed.reload();
+        }}
+      />
     </Screen>
   );
 }

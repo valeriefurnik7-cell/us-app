@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Link, Segmented, SegmentedButton, Sheet, Toggle, Toolbar } from 'konsta/react';
 import { Field, FieldGroup, TextInput } from '../FormRows';
+import DateRangePicker from '../DateRangePicker';
 import { useSession } from '../SessionProvider';
 import { EVENT_TYPES, deleteEvent, saveEvent } from '@/lib/events';
 import { errorMessage, supabase } from '@/lib/supabase';
@@ -64,7 +65,9 @@ function EventForm({ event, day, onClose }) {
     setBusy(true);
     setError(null);
     const start = fromInputs(form.startDate, form.all_day ? '' : form.startTime);
-    const end = fromInputs(form.endDate, form.all_day ? '' : form.endTime);
+    // A timed plan without a last day ends the same day at "Until".
+    const endDay = form.endDate || (!form.all_day && form.endTime ? form.startDate : '');
+    const end = fromInputs(endDay, form.all_day ? '' : form.endTime);
     if (end && end < start) {
       setError('The end is before the start.');
       setBusy(false);
@@ -114,20 +117,30 @@ function EventForm({ event, day, onClose }) {
           </Field>
         </FieldGroup>
 
-        <FieldGroup footer="Leave the end empty for a one-day event.">
+        {/* Tap one day for a one-day plan, or the first and last day for a period */}
+        <div className="mx-4 mt-4">
+          <DateRangePicker
+            value={{ start: form.startDate, end: form.endDate === form.startDate ? '' : form.endDate }}
+            onChange={({ start, end }) => setForm((f) => ({ ...f, startDate: start, endDate: end }))}
+          />
+        </div>
+
+        <FieldGroup>
           <Field label="All day">
             <span className="flex flex-1 justify-end">
               <Toggle checked={form.all_day} onChange={() => setForm({ ...form, all_day: !form.all_day })} />
             </span>
           </Field>
-          <Field label="Starts">
-            <TextInput type="date" value={form.startDate} onChange={set('startDate')} />
-            {!form.all_day && <TextInput type="time" value={form.startTime} onChange={set('startTime')} />}
-          </Field>
-          <Field label="Ends">
-            <TextInput type="date" value={form.endDate} onChange={set('endDate')} />
-            {!form.all_day && form.endDate && <TextInput type="time" value={form.endTime} onChange={set('endTime')} />}
-          </Field>
+          {!form.all_day && (
+            <>
+              <Field label="From">
+                <TextInput type="time" value={form.startTime} onChange={set('startTime')} />
+              </Field>
+              <Field label="Until">
+                <TextInput type="time" value={form.endTime} onChange={set('endTime')} />
+              </Field>
+            </>
+          )}
         </FieldGroup>
 
         <FieldGroup footer={form.is_private ? 'Your friend sees only “Busy” and the dates.' : 'Your friend sees everything.'}>
