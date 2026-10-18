@@ -4,6 +4,7 @@ import { supabase } from './supabase';
 import { useLive } from './useLive';
 import { withImages } from './images';
 import { removeMedia, uploadMedia } from './media';
+import { notify } from './push';
 
 // ───────────── Gifts ─────────────
 
@@ -44,7 +45,10 @@ export async function saveGift(gift, { me, pair, image }) {
   };
   if (gift.id) return supabase.from('gifts').update(row).eq('id', gift.id);
   const result = await supabase.from('gifts').insert({ ...row, pair_id: pair.id, wisher_id: me.id }).select().single();
-  if (!result.error) await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'gift', target_id: result.data.id });
+  if (!result.error) {
+    await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'gift', target_id: result.data.id });
+    notify('wish');
+  }
   return result;
 }
 

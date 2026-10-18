@@ -122,7 +122,7 @@ function Budget({ trip, reload }) {
   const { me, partner } = useSession();
   const mine = trip.budgets.find((b) => b.profile_id === me.id);
   const hers = trip.budgets.find((b) => b.profile_id !== me.id); // only there if she shares it
-  const currency = mine?.currency ?? 'EUR';
+  const currency = mine?.currency ?? me.currency ?? 'EUR';
   const myExpenses = trip.expenses.filter((e) => e.profile_id === me.id);
   const spent = myExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const [amount, setAmount] = useState(mine?.amount ?? '');

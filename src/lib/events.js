@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { supabase } from './supabase';
 import { useLive } from './useLive';
+import { notify } from './push';
 
 export const EVENT_TYPES = [
   { id: 'meeting', label: 'Meeting' },
@@ -98,6 +99,7 @@ export async function saveEvent(event, { me, pair }) {
   const result = await supabase.from('events').insert({ ...row, pair_id: pair.id, author_id: me.id }).select().single();
   if (!result.error && !row.is_private) {
     await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'event', target_id: result.data.id });
+    notify('event', { date: new Date(row.start).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) });
   }
   return result;
 }

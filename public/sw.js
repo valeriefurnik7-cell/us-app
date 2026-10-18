@@ -1,5 +1,5 @@
 // Offline cache for the app shell: network first, cached copy when offline.
-const CACHE = 'shell-v1';
+const CACHE = 'shell-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -27,5 +27,32 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => caches.match(request).then((hit) => hit || caches.match('/')))
+  );
+});
+
+// ───────────── Push notifications ─────────────
+
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {};
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Us', {
+      body: data.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
+// Tap on a notification: focus the open app on that screen, or open it.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((w) => new URL(w.url).origin === self.location.origin);
+      if (open) return open.focus().then((w) => w.navigate(url));
+      return self.clients.openWindow(url);
+    })
   );
 });

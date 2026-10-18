@@ -18,7 +18,7 @@ function GiftForm({ gift, onClose }) {
     url: gift?.url ?? '',
     title: gift?.title ?? '',
     price: gift?.price ?? '',
-    currency: gift?.currency ?? 'EUR',
+    currency: gift?.currency ?? me.currency ?? 'EUR',
     note: gift?.note ?? '',
   });
   const [image, setImage] = useState(undefined); // File | URL string | undefined (keep)
