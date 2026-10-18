@@ -118,11 +118,12 @@ function WishForm({ gift, draft, lists, onClose, onBack }) {
     setError(null);
     const { error } = await saveGift({ ...gift, ...form }, { me, pair, image });
     if (error) {
-      setError(errorMessage(error));
+      // Most likely the database is missing a newer migration — say so plainly.
+      setError(/column|schema cache/i.test(error.message) ? 'Couldn’t save: the database needs the latest SQL update (Supabase → SQL Editor).' : errorMessage(error));
       setBusy(false);
       return;
     }
-    onClose(true);
+    onClose(true, { list: form.list, isSecret: form.is_secret });
   }
 
   return (
@@ -290,10 +291,10 @@ function WishForm({ gift, draft, lists, onClose, onBack }) {
 export default function GiftSheet({ opened, gift, lists = [], defaultList, onClose }) {
   const [step, setStep] = useState('link'); // 'link' | 'form'
   const [draft, setDraft] = useState(null);
-  const close = (changed) => {
+  const close = (changed, saved) => {
     setStep('link');
     setDraft(null);
-    onClose(changed);
+    onClose(changed, saved);
   };
 
   return (

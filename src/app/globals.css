@@ -108,6 +108,12 @@ body {
  * - whenever a sheet, popup, action menu or dialog is open — Konsta gives every open one
  *   a visible full-screen backdrop, so its presence is the signal.
  */
+/* While a sheet or window is open, the screen behind it stays still. */
+body:has(.fixed.z-40.bg-black\/50:not(.invisible)) .k-app > .k-page {
+  overflow: hidden;
+  touch-action: none;
+}
+
 .app-bottom-bar {
   transition: translate 300ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease;
 }

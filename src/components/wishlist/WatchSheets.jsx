@@ -1,20 +1,52 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Link, Preloader, Segmented, SegmentedButton, Sheet, Toolbar } from 'konsta/react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Navbar, Page, Popup, Preloader, Segmented, SegmentedButton, Sheet, Toolbar } from 'konsta/react';
 import { Plus, Search, StarFill } from 'framework7-icons/react';
 import Avatar from '../Avatar';
 import { useSession } from '../SessionProvider';
 import { Poster } from './WatchTab';
 import { WATCH_STATUSES, addWatchItem, saveProgress, searchTitles, updateWatchItem } from '@/lib/wishlist';
+import { recommendations } from '@/lib/recommend';
 
 // ───────────── Add ─────────────
 
-function AddForm({ onClose }) {
+/** Poster card used for search results and recommendations. */
+function TitleCard({ item, adding, onAdd }) {
+  return (
+    <button type="button" onClick={() => onAdd(item)} disabled={Boolean(adding)} className="min-w-0 text-start">
+      <span className="relative block aspect-[2/3] overflow-hidden rounded-control bg-surface-2">
+        <Poster src={item.poster_url} type={item.type} className="h-full w-full" />
+        <span className="absolute end-1.5 bottom-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white shadow">
+          {adding === item.key ? <Preloader className="h-4! w-4! text-white" /> : <Plus className="text-[16px]" />}
+        </span>
+      </span>
+      <span className="mt-1.5 line-clamp-2 block text-subhead leading-tight font-semibold">{item.title}</span>
+      <span className="block truncate text-caption text-text-secondary">{item.reason ?? [item.genre, item.subtitle].filter(Boolean).join(' · ')}</span>
+    </button>
+  );
+}
+
+function AddForm({ items, onClose }) {
   const { me, pair } = useSession();
+  const input = useRef(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
+  const [picks, setPicks] = useState(null);
   const [adding, setAdding] = useState(null);
+
+  useEffect(() => {
+    // Focus without letting iOS scroll the page underneath.
+    const t = setTimeout(() => input.current?.focus({ preventScroll: true }), 350);
+    let cancelled = false;
+    recommendations(items)
+      .then((r) => !cancelled && setPicks(r))
+      .catch(() => !cancelled && setPicks([]));
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [items]);
 
   useEffect(() => {
     if (query.trim().length < 2) return;
@@ -36,41 +68,39 @@ function AddForm({ onClose }) {
     onClose(true);
   }
 
+  const searching = query.trim().length >= 2;
+
   return (
-    <>
-      <Toolbar top innerClassName="w-full! items-center! justify-between">
-        <span className="ps-2 text-body font-semibold">Add to watch</span>
-        <Link toolbar onClick={() => onClose(false)}>
-          Cancel
-        </Link>
-      </Toolbar>
-      <div className="h-[70vh] overflow-auto pb-safe-8">
-        <label className="mx-4 mt-2 flex h-10 items-center gap-2 rounded-control bg-surface-2 px-3">
-          <Search className="text-[16px] text-text-secondary" />
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Movie or series title"
-            className="h-full min-w-0 flex-1 bg-transparent text-body outline-none"
-          />
-        </label>
-        <ul className="mx-4 mt-3 space-y-2">
-          {query.trim().length >= 2 &&
-            (results ?? []).map((r) => (
-              <li key={r.key}>
-                <button type="button" onClick={() => add(r)} disabled={Boolean(adding)} className="flex w-full items-center gap-3 rounded-card bg-surface p-2.5 text-start">
-                  <Poster src={r.poster_url} type={r.type} className="h-[72px] w-12" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-body font-semibold">{r.title}</span>
-                    <span className="block truncate text-subhead text-text-secondary">{[r.genre, r.subtitle].filter(Boolean).join(' · ')}</span>
-                  </span>
-                  {adding === r.key ? <Preloader className="h-5! w-5!" /> : <Plus className="text-[20px] text-primary" />}
-                </button>
-              </li>
-            ))}
-          {query.trim().length >= 2 && (
-            <li className="flex gap-2">
+    <Page>
+      <Navbar
+        title="Add to watch"
+        right={
+          <Link onClick={() => onClose(false)}>
+            <b>Done</b>
+          </Link>
+        }
+        subnavbar={
+          <label className="flex h-10 w-full items-center gap-2 rounded-control bg-surface-2 px-3">
+            <Search className="text-[16px] text-text-secondary" />
+            <input
+              ref={input}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Movie or series title"
+              className="h-full min-w-0 flex-1 bg-transparent text-body outline-none"
+            />
+          </label>
+        }
+      />
+      <div className="px-4 pb-safe-8">
+        {searching ? (
+          <>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-4 pt-3">
+              {(results ?? []).map((r) => (
+                <TitleCard key={r.key} item={r} adding={adding} onAdd={add} />
+              ))}
+            </div>
+            <div className="mt-5 flex gap-2">
               {['movie', 'series'].map((type) => (
                 <button
                   key={type}
@@ -82,19 +112,37 @@ function AddForm({ onClose }) {
                   Add “{query.trim()}” as {type === 'movie' ? 'movie' : 'series'}
                 </button>
               ))}
-            </li>
-          )}
-        </ul>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="mt-3 mb-2 text-caption font-semibold tracking-wide text-text-secondary uppercase">For you two</h3>
+            {picks === null ? (
+              <div className="grid grid-cols-3 gap-3">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <div key={i} className="aspect-[2/3] animate-pulse rounded-control bg-surface-2" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-x-3 gap-y-4">
+                {picks.map((r) => (
+                  <TitleCard key={r.key} item={r} adding={adding} onAdd={add} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </>
+    </Page>
   );
 }
 
-export function WatchAddSheet({ opened, onClose }) {
+/** Full-screen, so the keyboard can't push a half sheet around. */
+export function WatchAddSheet({ opened, items = [], onClose }) {
   return (
-    <Sheet opened={opened} onBackdropClick={() => onClose(false)} className="w-full">
-      {opened && <AddForm onClose={onClose} />}
-    </Sheet>
+    <Popup opened={opened} onBackdropClick={() => onClose(false)}>
+      {opened && <AddForm items={items} onClose={onClose} />}
+    </Popup>
   );
 }
 
@@ -109,6 +157,23 @@ function aheadHint(mine, hers, partnerName) {
   const sameSeason = (mine?.season ?? 1) === (hers?.season ?? 1);
   const amount = sameSeason ? `${Math.abs(diff)} episode${Math.abs(diff) === 1 ? '' : 's'}` : 'a season or more';
   return diff > 0 ? `You’re ahead by ${amount}` : `${partnerName} is ahead by ${amount}`;
+}
+
+/** − value + ; step back as easily as forward. */
+function Stepper({ label, value, min, onChange }) {
+  return (
+    <span className="flex h-9 items-center rounded-full bg-surface-2">
+      <button type="button" aria-label={`${label} minus`} disabled={value <= min} onClick={() => onChange(value - 1)} className="flex h-9 w-9 items-center justify-center text-title disabled:opacity-30">
+        −
+      </button>
+      <span className="min-w-12 text-center text-subhead font-semibold tabular-nums">
+        {label} {value}
+      </span>
+      <button type="button" aria-label={`${label} plus`} onClick={() => onChange(value + 1)} className="flex h-9 w-9 items-center justify-center text-title text-primary">
+        +
+      </button>
+    </span>
+  );
 }
 
 function Stars({ value, onChange }) {
@@ -185,17 +250,24 @@ function Detail({ item, onClose }) {
               who ? (
                 <div key={who.id} className="mt-3 flex items-center gap-3">
                   <Avatar who={color} name={who.name} src={who.avatar} />
-                  <span className="flex-1 text-body">
-                    Season {p?.season ?? 1} · Episode {p?.episode ?? 0}
-                  </span>
-                  {who.id === me.id && (
-                    <span className="flex gap-1">
-                      <button type="button" onClick={() => save({ season: (p?.season ?? 1) + 1, episode: 0 })} className="h-9 rounded-full bg-surface-2 px-3 text-subhead">
-                        + season
-                      </button>
-                      <button type="button" onClick={() => save({ season: p?.season ?? 1, episode: (p?.episode ?? 0) + 1 })} className="h-9 rounded-full bg-accent px-3 text-subhead font-semibold text-white">
-                        + episode
-                      </button>
+                  {who.id === me.id ? (
+                    <span className="flex flex-1 flex-wrap items-center gap-2">
+                      <Stepper
+                        label="S"
+                        value={p?.season ?? 1}
+                        min={1}
+                        onChange={(season) => save({ season, episode: season > (p?.season ?? 1) ? 0 : p?.episode ?? 0 })}
+                      />
+                      <Stepper label="E" value={p?.episode ?? 0} min={0} onChange={(episode) => save({ season: p?.season ?? 1, episode })} />
+                      {(p?.episode ?? 0) > 0 && (
+                        <button type="button" onClick={() => save({ season: 1, episode: 0 })} className="h-9 px-1 text-subhead text-danger">
+                          Reset
+                        </button>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="flex-1 text-body">
+                      Season {p?.season ?? 1} · Episode {p?.episode ?? 0}
                     </span>
                   )}
                 </div>

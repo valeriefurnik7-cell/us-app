@@ -14,10 +14,10 @@ const MODES = [
   { id: 'system', label: 'Auto' },
 ];
 
-/** Applies the pair's accent color whenever it changes (also on the other phone). */
+/** Applies my accent color whenever it changes (also on my other devices). */
 export function AccentFromPair() {
-  const { pair } = useSession();
-  const accent = parseTheme(pair).accent;
+  const { me } = useSession();
+  const accent = parseTheme(me).accent;
   useEffect(() => {
     applyAccent(accent);
   }, [accent]);
@@ -45,15 +45,15 @@ export function AccentSwatches({ value, onChange }) {
 }
 
 function Look({ onClose }) {
-  const { pair, refresh } = useSession();
+  const { me, pair, refresh } = useSession();
   const { mode, setMode } = useTheme();
-  const theme = parseTheme(pair);
+  const theme = parseTheme(me);
   const input = useRef(null);
   const [busy, setBusy] = useState(false);
 
   async function update(patch) {
     if (patch.accent) applyAccent(patch.accent); // instant, before the round trip
-    await saveTheme(pair, patch);
+    await saveTheme(me, patch);
     await refresh();
   }
 
@@ -68,7 +68,7 @@ function Look({ onClose }) {
   return (
     <>
       <Toolbar top innerClassName="w-full! items-center! justify-between">
-        <span className="ps-2 text-body font-semibold">Our look</span>
+        <span className="ps-2 text-body font-semibold">My look</span>
         <Link toolbar onClick={onClose}>
           <b>Done</b>
         </Link>
@@ -83,7 +83,7 @@ function Look({ onClose }) {
           ))}
         </Segmented>
 
-        <h3 className="mt-6 mb-2 px-1 text-caption font-semibold tracking-wide text-text-secondary uppercase">Accent · for both of us</h3>
+        <h3 className="mt-6 mb-2 px-1 text-caption font-semibold tracking-wide text-text-secondary uppercase">Accent color</h3>
         <AccentSwatches value={theme.accent} onChange={(accent) => update({ accent })} />
 
         <h3 className="mt-6 mb-2 px-1 text-caption font-semibold tracking-wide text-text-secondary uppercase">“Us” card background</h3>

@@ -7,6 +7,7 @@ import { EmptyState } from '../Screen';
 import { Field, FieldGroup, TextInput } from '../FormRows';
 import { useSession } from '../SessionProvider';
 import { deleteDream, markDreamDone, reopenDream, saveDream } from '@/lib/wishlist';
+import ChangeRequests from '../ChangeRequests';
 import { errorMessage } from '@/lib/supabase';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -155,6 +156,10 @@ function DoneForm({ dream, onClose }) {
 }
 
 export default function DreamsTab({ dreams, loading, adding, onAddClose, onChanged }) {
+  const { me } = useSession();
+  // Shared dreams are ours; her personal dream is hers to change.
+  const canEdit = (d) => d.owner_id === null || d.owner_id === me.id;
+  const [suggestFor, setSuggestFor] = useState(null);
   const [menu, setMenu] = useState(null);
   const [editing, setEditing] = useState(null);
   const [doneFor, setDoneFor] = useState(null);
@@ -222,6 +227,19 @@ export default function DreamsTab({ dreams, loading, adding, onAddClose, onChang
           />
         )}
       </Sheet>
+      <Sheet opened={Boolean(suggestFor)} onBackdropClick={() => setSuggestFor(null)} className="w-full">
+        {suggestFor && (
+          <div className="pb-safe-8">
+            <div className="flex items-center justify-between px-4 pt-3">
+              <p className="text-body font-semibold">{suggestFor.title}</p>
+              <button type="button" onClick={() => setSuggestFor(null)} className="h-11 text-body text-primary">
+                Done
+              </button>
+            </div>
+            <ChangeRequests kind="dream" targetId={suggestFor.id} ownerId={suggestFor.owner_id} />
+          </div>
+        )}
+      </Sheet>
       <Sheet opened={Boolean(doneFor)} onBackdropClick={() => setDoneFor(null)} className="w-full">
         {doneFor && <DoneForm dream={doneFor} onClose={closeSheet(setDoneFor)} />}
       </Sheet>
@@ -229,7 +247,17 @@ export default function DreamsTab({ dreams, loading, adding, onAddClose, onChang
       <Actions opened={Boolean(menu)} onBackdropClick={() => setMenu(null)}>
         <ActionsGroup>
           <ActionsLabel>{menu?.title}</ActionsLabel>
-          {menu && !menu.done_at && (
+          {menu && !canEdit(menu) && (
+            <ActionsButton
+              onClick={() => {
+                setSuggestFor(menu);
+                setMenu(null);
+              }}
+            >
+              Suggest a change
+            </ActionsButton>
+          )}
+          {menu && canEdit(menu) && !menu.done_at && (
             <ActionsButton
               bold
               onClick={() => {
@@ -240,7 +268,7 @@ export default function DreamsTab({ dreams, loading, adding, onAddClose, onChang
               It came true
             </ActionsButton>
           )}
-          {menu?.done_at && (
+          {menu?.done_at && canEdit(menu) && (
             <ActionsButton
               onClick={async () => {
                 await reopenDream(menu);
@@ -251,23 +279,27 @@ export default function DreamsTab({ dreams, loading, adding, onAddClose, onChang
               Not yet, after all
             </ActionsButton>
           )}
-          <ActionsButton
-            onClick={() => {
-              setEditing({ dream: menu });
-              setMenu(null);
-            }}
-          >
-            Edit
-          </ActionsButton>
-          <ActionsButton
-            className="text-danger!"
-            onClick={() => {
-              setConfirmDelete(menu);
-              setMenu(null);
-            }}
-          >
-            Delete
-          </ActionsButton>
+          {menu && canEdit(menu) && (
+            <>
+              <ActionsButton
+                onClick={() => {
+                  setEditing({ dream: menu });
+                  setMenu(null);
+                }}
+              >
+                Edit
+              </ActionsButton>
+              <ActionsButton
+                className="text-danger!"
+                onClick={() => {
+                  setConfirmDelete(menu);
+                  setMenu(null);
+                }}
+              >
+                Delete
+              </ActionsButton>
+            </>
+          )}
         </ActionsGroup>
         <ActionsGroup>
           <ActionsButton bold onClick={() => setMenu(null)}>

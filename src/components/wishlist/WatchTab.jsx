@@ -2,7 +2,8 @@
 
 import { useRef, useState } from 'react';
 import { Chip } from 'konsta/react';
-import { Ellipsis, Film, PinFill, Plus, Search, Shuffle, Tv } from 'framework7-icons/react';
+import { Ellipsis, Film, PinFill, Plus, Search, Shuffle, StarFill, Tv } from 'framework7-icons/react';
+import { Segmented, SegmentedButton } from 'konsta/react';
 import Avatar from '../Avatar';
 import { EmptyState } from '../Screen';
 import { useSession } from '../SessionProvider';
@@ -77,11 +78,19 @@ function FilterChips({ options, value, onChange }) {
   ));
 }
 
+const STATUS_STYLE = {
+  want: 'bg-surface-2 text-text-secondary',
+  watching: 'bg-accent/15 text-primary',
+  watched: 'bg-her/15 text-her',
+};
+
 function WatchCard({ item, onOpen, onMenu }) {
   const { me, partner } = useSession();
   const mine = item.added_by === me.id;
   const author = mine ? me : partner;
   const status = WATCH_STATUSES.find((s) => s.id === item.status)?.label;
+  const ratings = item.progress.map((p) => p.rating).filter(Boolean);
+  const avg = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1).replace('.0', '') : null;
   return (
     <div className="flex items-center gap-3 rounded-card bg-surface p-2.5">
       <button type="button" onClick={() => onOpen(item)} className="flex min-w-0 flex-1 items-center gap-3 text-start">
@@ -94,9 +103,15 @@ function WatchCard({ item, onOpen, onMenu }) {
           <span className="block truncate text-subhead text-text-secondary">
             {[item.genre, item.type === 'series' ? 'Series' : 'Movie'].filter(Boolean).join(' · ')}
           </span>
-          <span className="mt-1 flex items-center gap-1.5 text-caption text-text-secondary">
-            <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-5! w-5! text-[10px]!" />
-            {status}
+          <span className="mt-1.5 flex items-center gap-2 text-caption">
+            <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-7! w-7! text-[12px]!" />
+            <span className={`rounded-full px-2 py-0.5 font-semibold ${STATUS_STYLE[item.status]}`}>{status?.replace(' to watch', '')}</span>
+            {avg && (
+              <span className="flex items-center gap-0.5 font-semibold text-together">
+                <StarFill className="text-[12px]" />
+                {avg}
+              </span>
+            )}
           </span>
         </span>
       </button>
@@ -142,10 +157,19 @@ export default function WatchTab({ items, loading, onOpen, onMenu, onAdd }) {
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="h-full min-w-0 flex-1 bg-transparent text-body outline-none" />
           </label>
 
+          {/* One clear status filter */}
+          <div className="mx-4 mt-3">
+            <Segmented rounded>
+              {[{ id: null, label: 'All' }, ...WATCH_STATUSES.map((s) => ({ id: s.id, label: s.label.replace(' to watch', '') }))].map((o) => (
+                <SegmentedButton key={o.id ?? 'all'} rounded small active={status === o.id} onClick={() => setStatus(o.id)}>
+                  {o.label}
+                </SegmentedButton>
+              ))}
+            </Segmented>
+          </div>
           <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto px-4">
             <FilterChips options={[{ id: 'movie', label: 'Movies' }, { id: 'series', label: 'Series' }]} value={type} onChange={setType} />
-            <FilterChips options={WATCH_STATUSES.map((s) => ({ id: s.id, label: s.label.replace(' to watch', '') }))} value={status} onChange={setStatus} />
-            <FilterChips options={genres.map((g) => ({ id: g, label: g }))} value={genre} onChange={setGenre} />
+                <FilterChips options={genres.map((g) => ({ id: g, label: g }))} value={genre} onChange={setGenre} />
           </div>
         </>
       )}

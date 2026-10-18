@@ -38,7 +38,7 @@ function PlaceCard({ place, onOpen }) {
         <span className="block truncate text-body font-semibold">{place.title}</span>
         <span className="block truncate text-subhead text-text-secondary">{[category, place.city].filter(Boolean).join(' · ')}</span>
         <span className="mt-1 flex items-center gap-2 text-caption text-text-secondary">
-          <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-5! w-5! text-[10px]!" />
+          <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-7! w-7! text-[12px]!" />
           {place.likes.length > 0 && (
             <span className="flex items-center gap-0.5 text-danger">
               <HeartFill className="text-[12px]" />

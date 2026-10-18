@@ -77,10 +77,17 @@ function WishCard({ gift, mine, onOpen, onMenu }) {
   );
 }
 
-export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu }) {
+export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo }) {
   const { me, partner } = useSession();
   const [whose, setWhose] = useState('mine');
   const [filter, setFilter] = useState(ALL);
+  // After saving a wish, show the list it went into.
+  const [lastJump, setLastJump] = useState(jumpTo);
+  if (jumpTo && jumpTo !== lastJump) {
+    setLastJump(jumpTo);
+    setWhose('mine');
+    setFilter(jumpTo.isSecret ? SECRET : jumpTo.list || ALL);
+  }
   const [newList, setNewList] = useState(null);
   const [extraLists, setExtraLists] = useState([]); // lists created here before their first wish
   const [showGiven, setShowGiven] = useState(false);
@@ -140,10 +147,12 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu }) {
             <button
               type="button"
               onClick={() => setNewList('')}
-              aria-label="New list"
-              className="flex h-[72px] w-14 shrink-0 items-center justify-center rounded-card border-2 border-dashed border-text-secondary/25 text-primary"
+              className="flex h-[72px] w-28 shrink-0 flex-col justify-between rounded-card border-2 border-dashed border-accent/50 px-3 py-2.5 text-start text-primary"
             >
-              <Plus className="text-[20px]" />
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white">
+                <Plus className="text-[13px]" />
+              </span>
+              <span className="text-subhead leading-tight font-semibold">New list</span>
             </button>
           ) : (
             <input

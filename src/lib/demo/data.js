@@ -207,7 +207,17 @@ export function buildDemoDb() {
       { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'pet_photo', target_id: posts.find((p) => p.author_id === DEMO_HER && p.caption?.startsWith('Luna has'))?.id, created_at: hoursAgo(50) },
       { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'trip', target_id: trip, created_at: hoursAgo(200) },
       { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'gift', target_id: gifts.kallax, created_at: hoursAgo(100) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'event', target_id: meeting, created_at: hoursAgo(26) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'pet_added', target_id: pets.luna, created_at: hoursAgo(28) },
     ],
     push_subscriptions: [],
+    change_requests: [],
+    shared_expenses: [
+      { id: id('0'), pair_id: PAIR, created_by: DEMO_ME, paid_by: DEMO_ME, title: 'Train tickets to Milan', amount: 184, currency: 'EUR', shares: { [DEMO_ME]: 92, [DEMO_HER]: 92 }, category: 'transport', spent_on: ymd(-3), trip_id: trip, event_id: null, is_settlement: false, created_at: hoursAgo(72) },
+      { id: id('0'), pair_id: PAIR, created_by: DEMO_HER, paid_by: DEMO_HER, title: 'Apartment in Brera', amount: 420, currency: 'EUR', shares: { [DEMO_ME]: 210, [DEMO_HER]: 210 }, category: 'stay', spent_on: ymd(-2), trip_id: trip, event_id: null, is_settlement: false, created_at: hoursAgo(50) },
+      { id: id('0'), pair_id: PAIR, created_by: DEMO_ME, paid_by: DEMO_ME, title: 'Masha’s birthday cake order', amount: 36, currency: 'EUR', shares: { [DEMO_ME]: 0, [DEMO_HER]: 36 }, category: 'food', spent_on: ymd(-1), trip_id: null, event_id: null, is_settlement: false, created_at: hoursAgo(20) },
+      { id: id('0'), pair_id: PAIR, created_by: DEMO_HER, paid_by: DEMO_HER, title: 'Dinner at Time Out Market', amount: 58, currency: 'EUR', shares: { [DEMO_ME]: 29, [DEMO_HER]: 29 }, category: 'food', spent_on: ymd(-58), trip_id: pastTrip, event_id: null, is_settlement: false, created_at: hoursAgo(1400) },
+      { id: id('0'), pair_id: PAIR, created_by: DEMO_ME, paid_by: DEMO_ME, title: 'Settled up', amount: 29, currency: 'EUR', shares: { [DEMO_HER]: 29, [DEMO_ME]: 0 }, category: null, spent_on: ymd(-55), trip_id: pastTrip, event_id: null, is_settlement: true, created_at: hoursAgo(1300) },
+    ],
   };
 }

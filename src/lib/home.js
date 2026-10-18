@@ -41,6 +41,17 @@ export function timeDifference(now, myZone, herZone, herName) {
   return diff > 0 ? `${herName} is ${amount} ahead` : `You’re ${amount} ahead`;
 }
 
+/** Straight-line distance between two cities, in km. */
+export function distanceKm(a, b) {
+  if (a?.lat == null || b?.lat == null) return null;
+  const rad = (d) => (d * Math.PI) / 180;
+  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
+  return Math.round(2 * 6371 * Math.asin(Math.sqrt(h)));
+}
+
+/** Hour of the day in a time zone. */
+export const localHour = (now, timezone) => Number(now.toLocaleString('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: timezone || undefined }));
+
 /** Current weather from Open-Meteo (free, no key). */
 export function useWeather(lat, lon) {
   const [weather, setWeather] = useState(null);
@@ -90,7 +101,13 @@ async function loadHome() {
   ]);
 
   const nextMeeting = (upcoming ?? []).find((e) => e.type === 'meeting') ?? null;
-  return { nextMeeting, counts: { meetings, trips, petPhotos }, activity: activity ?? [] };
+  // The last time we were together, for "how much of the wait is behind us".
+  const { data: past } = await supabase.rpc('pair_events', {
+    range_start: new Date(now.getFullYear() - 3, now.getMonth(), 1).toISOString(),
+    range_end: today.toISOString(),
+  });
+  const lastMeeting = (past ?? []).filter((e) => e.type === 'meeting').at(-1) ?? null;
+  return { nextMeeting, lastMeeting, counts: { meetings, trips, petPhotos }, activity: activity ?? [] };
 }
 
 export const useHome = () => useLive(loadHome, HOME_TABLES);
@@ -155,7 +172,7 @@ export async function describeActivity(rows) {
         case 'dream':
           return { ...r, text: 'added a dream', detail: t.title, href: '/wishlist', thumb: t.image_url };
         case 'event':
-          return { ...r, text: `added plans for ${day(t.start)}`, detail: [t.title, t.city].filter(Boolean).join(' · '), href: '/plans' };
+          return { ...r, text: `added plans for ${day(t.start)}`, detail: [t.title, t.city].filter(Boolean).join(' · '), href: '/plans', date: t.start };
         case 'trip':
           return { ...r, text: `added a trip to ${t.destination}`, href: `/plans/trips/${t.id}`, thumb: t.cover_url };
         case 'place':

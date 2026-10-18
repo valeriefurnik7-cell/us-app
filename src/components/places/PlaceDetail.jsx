@@ -133,7 +133,7 @@ function Detail({ place, onClose, onEdit }) {
         </div>
 
         <div className="mx-4 mt-3 flex items-center gap-2 text-subhead text-text-secondary">
-          <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-6! w-6! text-[11px]!" />
+          <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-8! w-8! text-[13px]!" />
           Added by {mine ? 'you' : author?.name}
           {place.likes.length > 0 && (
             <span className="flex items-center gap-1 text-danger">

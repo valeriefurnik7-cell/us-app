@@ -29,6 +29,7 @@ export default function WishlistPage() {
   const [giftId, setGiftId] = useState(null);
   const [giftEdit, setGiftEdit] = useState(null); // { gift, list } | null
   const [giftMenu, setGiftMenu] = useState(null);
+  const [jumpTo, setJumpTo] = useState(null); // the list to show after saving a wish
   const [giftDelete, setGiftDelete] = useState(null);
   const { me } = useSession();
   // Lists I already use, offered when adding a wish.
@@ -69,6 +70,7 @@ export default function WishlistPage() {
           onOpen={(g) => setGiftId(g.id)}
           onAdd={(list) => setGiftEdit({ gift: null, list })}
           onMenu={setGiftMenu}
+          jumpTo={jumpTo}
         />
       )}
       {segment === 'watch' && (
@@ -89,9 +91,13 @@ export default function WishlistPage() {
         gift={giftEdit?.gift ?? null}
         lists={myLists}
         defaultList={giftEdit?.list}
-        onClose={(changed) => {
+        onClose={(changed, saved) => {
           setGiftEdit(null);
           if (changed) gifts.reload();
+          if (saved) {
+            setSegment('gifts');
+            setJumpTo({ ...saved });
+          }
         }}
       />
       <GiftDetail
@@ -108,6 +114,7 @@ export default function WishlistPage() {
 
       <WatchAddSheet
         opened={watchAdd}
+        items={watch.data ?? []}
         onClose={(changed) => {
           setWatchAdd(false);
           if (changed) watch.reload();

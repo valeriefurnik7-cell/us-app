@@ -12,6 +12,7 @@ import {
   CloudRainFill,
   CloudSnowFill,
   CloudSunFill,
+  HeartFill,
   MoonStarsFill,
   PaintbrushFill,
   SunMaxFill,
@@ -24,8 +25,10 @@ import { useSession } from '@/components/SessionProvider';
 import AppearanceSheet from '@/components/AppearanceSheet';
 import { parseTheme } from '@/lib/appearance';
 import { signedUrls } from '@/lib/media';
-import { localTime, timeDifference, useHome, useNow, useUpdates, useWeather, weatherKind } from '@/lib/home';
+import { distanceKm, localHour, localTime, timeDifference, useHome, useNow, useUpdates, useWeather, weatherKind } from '@/lib/home';
 import UpdatesFeed from '@/components/UpdatesFeed';
+import Balance from '@/components/expenses/Balance';
+import { useSharedExpenses } from '@/lib/expenses';
 import { timeAgo } from '@/lib/dates';
 import { startOfDay } from '@/lib/events';
 
@@ -42,25 +45,37 @@ const WEATHER_ICONS = {
   storm: <CloudBoltFill className={ICON} />,
 };
 
-function Person({ profile, who, now }) {
+/** One side of the Us card: avatar, city, local time with day/night, weather. */
+function Person({ profile, who, now, onPhoto }) {
   const weather = useWeather(profile?.lat, profile?.lon);
+  const hour = profile?.timezone ? localHour(now, profile.timezone) : null;
+  const night = hour !== null && (hour < 7 || hour >= 21);
   return (
-    <NextLink href={who === 'me' ? '/profile/me' : '/profile/friend'} className="flex flex-1 flex-col items-center gap-1 text-center">
-      <Avatar who={who} name={profile?.name ?? '+'} src={profile?.avatar} size="md" className={profile ? '' : 'opacity-50'} />
-      <p className="mt-1 text-subhead font-semibold">{profile?.name ?? 'Waiting…'}</p>
+    <NextLink href={who === 'me' ? '/profile/me' : '/profile/friend'} className="relative z-10 flex flex-1 flex-col items-center text-center">
+      <span className={`rounded-full p-1 ${who === 'me' ? 'bg-me/25' : 'bg-her/25'}`}>
+        <Avatar who={who} name={profile?.name ?? '+'} src={profile?.avatar} size="lg" className={`h-[72px]! w-[72px]! ${profile ? '' : 'opacity-50'}`} />
+      </span>
+      <p className="mt-2 text-body font-bold">{profile?.name ?? 'Waiting…'}</p>
       {profile?.city ? (
         <>
           <p className="text-caption text-text-secondary">{profile.city}</p>
-          <p className="text-title font-bold tabular-nums">{localTime(now, profile.timezone)}</p>
-          {weather && (
-            <p className="flex items-center gap-1 text-subhead text-text-secondary">
-              {WEATHER_ICONS[weatherKind(weather.code, weather.day)]}
-              {weather.temp}°
-            </p>
-          )}
+          <p className="mt-2 flex items-center gap-1.5 text-[28px] leading-none font-bold tabular-nums">
+            {localTime(now, profile.timezone)}
+          </p>
+          <p className={`mt-1.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-caption font-semibold ${onPhoto ? 'bg-black/30' : 'bg-surface-2'}`}>
+            {night ? <MoonStarsFill className="text-[12px]" /> : <SunMaxFill className="text-[12px] text-together" />}
+            {night ? 'Night' : 'Day'}
+            {weather && (
+              <>
+                <span className="opacity-40">·</span>
+                {WEATHER_ICONS[weatherKind(weather.code, weather.day)]}
+                {weather.temp}°
+              </>
+            )}
+          </p>
         </>
       ) : (
-        profile && <p className="text-caption text-primary">Add your city</p>
+        profile && <p className="mt-1 text-caption text-primary">Add your city</p>
       )}
     </NextLink>
   );
@@ -83,8 +98,9 @@ function UsCard() {
   const { me, partner, pair } = useSession();
   const now = useNow();
   const [lookOpen, setLookOpen] = useState(false);
-  const photo = useCardPhoto(parseTheme(pair).cardPhoto);
+  const photo = useCardPhoto(parseTheme(me).cardPhoto);
   const diff = partner && timeDifference(now, me.timezone, partner.timezone, partner.name);
+  const km = distanceKm(me, partner);
 
   return (
     <section className={`relative mx-4 mt-2 overflow-hidden rounded-card px-3 pt-4 pb-4 ${photo ? 'text-white' : 'bg-surface'}`}>
@@ -108,9 +124,17 @@ function UsCard() {
         <NextLink href="/settings" className="block text-center text-caption font-semibold tracking-wide text-text-secondary uppercase">
           {pair?.name}
         </NextLink>
-        <div className="mt-3 flex">
-          <Person profile={me} who="me" now={now} />
-          <Person profile={partner} who="her" now={now} />
+        <div className="relative mt-4 flex">
+          {/* The two of us, joined by a dotted line with the distance between our cities */}
+          <span className="absolute inset-x-[25%] top-[38px] border-t-2 border-dashed border-text-secondary/35" />
+          {km !== null && (
+            <span className={`absolute top-[26px] left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full px-2.5 py-1 text-caption font-bold ${photo ? 'bg-black/40' : 'bg-surface-2'}`}>
+              <HeartFill className="text-[11px] text-danger" />
+              {km.toLocaleString('en-GB')} km
+            </span>
+          )}
+          <Person profile={me} who="me" now={now} onPhoto={Boolean(photo)} />
+          <Person profile={partner} who="her" now={now} onPhoto={Boolean(photo)} />
         </div>
         {diff && <p className="mt-3 text-center text-subhead font-semibold text-primary">{diff}</p>}
       </div>
@@ -120,7 +144,28 @@ function UsCard() {
   );
 }
 
-function Countdown({ meeting, loading }) {
+/** How much of the time between our last and next meeting is already behind us. */
+function WaitBar({ from, to }) {
+  const start = startOfDay(new Date(from.end ?? from.start)).getTime();
+  const end = startOfDay(new Date(to.start)).getTime();
+  const share = Math.min(1, Math.max(0, (startOfDay(new Date()).getTime() - start) / Math.max(1, end - start)));
+  const since = new Date(from.end ?? from.start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return (
+    <div className="mt-4">
+      <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+        <div className="h-full rounded-full bg-together" style={{ width: `${Math.round(share * 100)}%` }} />
+      </div>
+      <p className="mt-1.5 flex justify-between text-caption text-text-secondary">
+        <span>
+          Last time: {from.city ?? from.title}, {since}
+        </span>
+        <span>{Math.round(share * 100)}% of the wait done</span>
+      </p>
+    </div>
+  );
+}
+
+function Countdown({ meeting, lastMeeting, loading }) {
   if (loading) return <div className="mx-4 mt-3 h-28 animate-pulse rounded-card bg-surface" />;
   if (!meeting) {
     return (
@@ -158,9 +203,34 @@ function Countdown({ meeting, loading }) {
             <span className="text-title font-semibold">{days === 1 ? 'day' : 'days'}</span>
           </p>
           <p className="mt-2 text-subhead text-text-secondary">{[meeting.city ?? meeting.title, dates].filter(Boolean).join(' · ')}</p>
+          {lastMeeting && <WaitBar from={lastMeeting} to={meeting} />}
         </>
       )}
     </NextLink>
+  );
+}
+
+/** Who owes whom, at a glance; opens the Tricount-style page. */
+function ExpensesCard() {
+  const expenses = useSharedExpenses();
+  return (
+    <section className="mx-4 mt-3">
+      <div className="mb-1.5 flex items-center justify-between px-4">
+        <h3 className="text-caption font-semibold tracking-wide text-text-secondary uppercase">Shared expenses</h3>
+        <NextLink href="/expenses" className="flex h-9 items-center text-subhead text-primary">
+          Open
+        </NextLink>
+      </div>
+      {expenses.loading ? (
+        <div className="h-16 animate-pulse rounded-card bg-surface" />
+      ) : (expenses.data ?? []).length === 0 ? (
+        <NextLink href="/expenses" className="flex h-16 items-center justify-center rounded-card border-2 border-dashed border-text-secondary/25 text-subhead font-semibold text-primary">
+          Split a bill — who paid, who owes
+        </NextLink>
+      ) : (
+        <Balance compact expenses={expenses.data} onChanged={expenses.reload} />
+      )}
+    </section>
   );
 }
 
@@ -216,8 +286,9 @@ export default function HomePage() {
       <AppNavbar title="Home" />
       <UsCard />
       <InviteCard />
-      <Countdown meeting={home.data?.nextMeeting} loading={home.loading} />
+      <Countdown meeting={home.data?.nextMeeting} lastMeeting={home.data?.lastMeeting} loading={home.loading} />
       <Counters counts={home.data?.counts} />
+      <ExpensesCard />
       <Updates />
     </Screen>
   );

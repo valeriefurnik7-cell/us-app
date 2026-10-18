@@ -11,6 +11,8 @@ const MESSAGES = {
   reply: { pref: 'replies', body: (name) => `${name} replied to your photo`, url: '/pets' },
   event: { pref: 'new_event', body: (name, d) => `${name} added plans for ${d.date}`, url: '/plans' },
   wish: { pref: 'new_wish', body: (name) => `${name} added a wish`, url: '/wishlist' },
+  request: { pref: 'replies', body: (name) => `${name} suggested a change`, url: '/' },
+  expense: { pref: 'new_event', body: (name, d) => `${name} added an expense: ${d.title ?? ''}`.trim(), url: '/expenses' },
 };
 
 /** The signed-in user did something; tell her partner (if she allows this kind of notification). */

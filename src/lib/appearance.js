@@ -10,18 +10,14 @@ export const ACCENTS = [
   { id: 'green', label: 'Green', light: '#1E9E5A', dark: '#30D158' },
 ];
 
-/** pairs.theme holds JSON: { accent, cardPhoto } — shared by both of you. */
-export function parseTheme(pair) {
-  try {
-    return { accent: 'purple', cardPhoto: null, ...JSON.parse(pair?.theme || '{}') };
-  } catch {
-    return { accent: 'purple', cardPhoto: null };
-  }
+/** Each of us picks her own look: { accent, cardPhoto } kept in her profile settings. */
+export function parseTheme(profile) {
+  return { accent: 'purple', cardPhoto: null, ...profile?.notify_prefs?.look };
 }
 
-export async function saveTheme(pair, patch) {
-  const next = { ...parseTheme(pair), ...patch };
-  return supabase.from('pairs').update({ theme: JSON.stringify(next) }).eq('id', pair.id);
+export async function saveTheme(profile, patch) {
+  const look = { ...parseTheme(profile), ...patch };
+  return supabase.from('profiles').update({ notify_prefs: { ...profile.notify_prefs, look } }).eq('id', profile.id);
 }
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));

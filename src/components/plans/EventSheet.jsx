@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Link, Segmented, SegmentedButton, Sheet, Toggle, Toolbar } from 'konsta/react';
 import { Field, FieldGroup, TextInput } from '../FormRows';
 import DateRangePicker from '../DateRangePicker';
+import ChangeRequests from '../ChangeRequests';
 import { useSession } from '../SessionProvider';
 import { EVENT_TYPES, deleteEvent, saveEvent } from '@/lib/events';
 import { errorMessage, supabase } from '@/lib/supabase';
@@ -18,7 +19,7 @@ function initialForm(event, day) {
   const end = event?.end ? new Date(event.end) : null;
   return {
     title: event?.title ?? '',
-    type: event?.type ?? 'meeting',
+    type: event?.type ?? 'busy', // a meeting is a deliberate choice — it drives the countdown on Home
     all_day: event?.all_day ?? true,
     startDate: toDateInput(start),
     startTime: toTimeInput(start),
@@ -198,11 +199,44 @@ function EventForm({ event, day, onClose }) {
   );
 }
 
+/** Her own plan (not a shared meeting): I can read it and suggest a change, not edit it. */
+function EventView({ event, onClose }) {
+  const { partner } = useSession();
+  const type = EVENT_TYPES.find((t) => t.id === event.type)?.label;
+  const fmt = (d) =>
+    new Date(d).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', ...(event.all_day ? {} : { hour: '2-digit', minute: '2-digit' }) });
+  return (
+    <>
+      <Toolbar top innerClassName="w-full! items-center! justify-between">
+        <span className="ps-2 text-subhead text-text-secondary">{partner?.name}’s plan</span>
+        <Link toolbar onClick={() => onClose(false)}>
+          <b>Done</b>
+        </Link>
+      </Toolbar>
+      <div className="max-h-[78vh] overflow-auto px-0 pb-safe-8">
+        <div className="px-4">
+          <p className="text-title font-bold">{event.title}</p>
+          <p className="mt-1 text-subhead text-text-secondary">{[type, event.city].filter(Boolean).join(' · ')}</p>
+          <p className="mt-3 text-body">
+            {fmt(event.start)}
+            {event.end && ` – ${fmt(event.end)}`}
+          </p>
+          {event.note && <p className="mt-3 rounded-card bg-surface p-3 text-body">{event.note}</p>}
+        </div>
+        <ChangeRequests kind="event" targetId={event.id} ownerId={event.author_id} />
+      </div>
+    </>
+  );
+}
+
 /** New event (event = null) on `day`, or edit an existing one. onClose(changed). */
 export default function EventSheet({ opened, event, day, onClose }) {
+  const { me } = useSession();
+  // Her plans are hers; a meeting belongs to both of us.
+  const readOnly = Boolean(event && event.author_id !== me.id && event.type !== 'meeting');
   return (
     <Sheet opened={opened} onBackdropClick={() => onClose(false)} className="w-full">
-      {opened && <EventForm event={event} day={day} onClose={onClose} />}
+      {opened && (readOnly ? <EventView event={event} onClose={onClose} /> : <EventForm event={event} day={day} onClose={onClose} />)}
     </Sheet>
   );
 }

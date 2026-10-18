@@ -114,7 +114,7 @@ function Detail({ gift, onClose, onEdit }) {
 
         <div className="px-4 pt-4">
           <div className="flex items-center gap-2 text-subhead text-text-secondary">
-            <Avatar who={mine ? 'me' : 'her'} name={(mine ? me : partner)?.name} src={(mine ? me : partner)?.avatar} className="h-6! w-6! text-[11px]!" />
+            <Avatar who={mine ? 'me' : 'her'} name={(mine ? me : partner)?.name} src={(mine ? me : partner)?.avatar} className="h-8! w-8! text-[13px]!" />
             {mine ? 'Your wish' : partner?.name}
             {gift.list && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-caption">{gift.list}</span>}
             {mine && gift.is_secret && (

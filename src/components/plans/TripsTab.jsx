@@ -36,7 +36,7 @@ function TripCard({ trip }) {
       <div className="p-3">
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-body font-semibold">{trip.destination}</p>
-          <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-6! w-6! text-[11px]!" />
+          <Avatar who={mine ? 'me' : 'her'} name={author?.name} src={author?.avatar} className="h-8! w-8! text-[13px]!" />
         </div>
         <p className="text-subhead text-text-secondary">
           {[tripDates(trip), trip.shared ? 'Together' : 'Solo', trip.stops.length ? `places ${visited}/${trip.stops.length}` : null].filter(Boolean).join(' · ')}

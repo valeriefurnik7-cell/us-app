@@ -156,15 +156,15 @@ function Notifications() {
 }
 
 function Accent() {
-  const { pair, refresh } = useSession();
+  const { me, refresh } = useSession();
   return (
-    <FieldGroup title="Accent color" footer="Shared: changes the color for both of you.">
+    <FieldGroup title="Accent color" footer="Just for you — she picks her own.">
       <li className="px-4 py-3">
         <AccentSwatches
-          value={parseTheme(pair).accent}
+          value={parseTheme(me).accent}
           onChange={async (accent) => {
             applyAccent(accent);
-            await saveTheme(pair, { accent });
+            await saveTheme(me, { accent });
             await refresh();
           }}
         />

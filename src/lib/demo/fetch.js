@@ -3,7 +3,7 @@
 
 import { DEMO_HER, DEMO_ME, buildDemoDb } from './data';
 
-const DB_KEY = 'demo-db-v3'; // bump when the demo data changes shape
+const DB_KEY = 'demo-db-v4'; // bump when the demo data changes shape
 
 let db = null;
 function load() {
@@ -78,7 +78,7 @@ function matches(row, params) {
 
 function order(rows, spec) {
   if (!spec) return rows;
-  const [col, dir] = spec.split('.');
+  const [col, dir] = spec.split(',')[0].split('.');
   const sign = dir === 'desc' ? -1 : 1;
   return [...rows].sort((a, b) => {
     if (a[col] == null) return 1;
