@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { SquareArrowUp } from 'framework7-icons/react';
-import { renderTrophyCard, winnerDate } from '@/lib/petOfDay';
+import { renderTrophyCard, sentLine, winnerDate } from '@/lib/petOfDay';
 
 /** A little trophy cup. */
 export function Trophy({ className = '' }) {
@@ -62,6 +62,7 @@ export default function TrophyCard({ winner, compact = false }) {
       <div className="px-3 pt-2 pb-2.5 text-[#1A1300]">
         <p className={`${compact ? 'text-title' : 'text-[30px]'} leading-tight font-extrabold`}>{winner.name}</p>
         <p className="text-subhead font-semibold opacity-70">{winnerDate(winner.day)}</p>
+        {sentLine(winner) && <p className="text-caption font-medium opacity-60">{sentLine(winner)}</p>}
       </div>
     </div>
   );

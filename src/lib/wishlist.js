@@ -5,6 +5,7 @@ import { useLive } from './useLive';
 import { withImages } from './images';
 import { removeMedia, uploadMedia } from './media';
 import { notify } from './push';
+import { toNumber } from './numbers';
 
 // ───────────── Gifts ─────────────
 
@@ -38,7 +39,7 @@ export async function saveGift(gift, { me, pair, image }) {
   const row = {
     title: gift.title.trim(),
     url: gift.url?.trim() || null,
-    price: gift.price === '' || gift.price == null ? null : Number(gift.price),
+    price: Number.isFinite(toNumber(gift.price)) ? toNumber(gift.price) : null,
     currency: gift.currency || null,
     note: gift.note?.trim() || null,
     list: gift.list?.trim() || null,

@@ -8,6 +8,7 @@ import { useSession } from '../SessionProvider';
 import { EXPENSE_CURRENCIES, SPLIT_CATEGORIES, deleteSharedExpense, saveSharedExpense, sharesFor, splitFromShares } from '@/lib/expenses';
 import { money } from '@/lib/trips';
 import { errorMessage } from '@/lib/supabase';
+import { toAmount } from '@/lib/numbers';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -51,11 +52,21 @@ function ExpenseForm({ expense, trips, defaultTripId, onClose }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
-  const amount = Number(form.amount) || 0;
+  const amount = toAmount(form.amount);
   const shares = sharesFor(amount, split, people);
   const sharesSum = Object.values(shares).reduce((a, b) => a + b, 0);
   const splitOk = amount > 0 && Math.abs(sharesSum - amount) <= 0.01 && Object.values(shares).some((v) => v > 0);
   const canSave = form.title.trim() && amount > 0 && splitOk && partner;
+  // Save is greyed out — say why instead of leaving her guessing
+  const blocker = !partner
+    ? 'Shared expenses need both of you — invite your friend from Home first.'
+    : !form.title.trim()
+      ? 'Add a title to save.'
+      : !(amount > 0)
+        ? form.amount.trim()
+          ? 'That amount doesn’t look like a number.'
+          : 'Enter an amount to save.'
+        : null;
 
   async function save() {
     setBusy(true);
@@ -89,7 +100,7 @@ function ExpenseForm({ expense, trips, defaultTripId, onClose }) {
         />
         <div className="flex items-center gap-3 px-4 py-3">
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
             value={form.amount}
             onChange={set('amount')}
@@ -209,7 +220,7 @@ function ExpenseForm({ expense, trips, defaultTripId, onClose }) {
 
             {split.mode === 'amounts' ? (
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={split.amounts[p.id]}
                 onChange={(e) => setSplit({ ...split, amounts: { ...split.amounts, [p.id]: e.target.value } })}
@@ -228,6 +239,7 @@ function ExpenseForm({ expense, trips, defaultTripId, onClose }) {
         </p>
       )}
 
+      {blocker && !error && <p className="mx-8 mt-3 text-subhead text-text-secondary">{blocker}</p>}
       {error && <p className="mx-8 mt-3 text-subhead text-danger">{error}</p>}
 
       {expense && (

@@ -6,20 +6,39 @@ import { signedUrls } from './media';
 
 const TABLES = ['pet_of_day'];
 
-/** Every Pet of the day, newest first, with its photo and the pet's name. */
+/** Every Pet of the day, newest first, with its photo, the pet's name and who sent it when. */
 async function loadWinners() {
   const { data: rows } = await supabase.from('pet_of_day').select('*').order('day', { ascending: false });
   if (!rows?.length) return [];
-  const [{ data: media }, { data: cats }] = await Promise.all([
+  const [{ data: media }, { data: cats }, { data: posts }] = await Promise.all([
     supabase.from('cat_post_media').select('id, url').in('id', rows.map((r) => r.media_id)),
     supabase.from('cats').select('id, name').in('id', rows.map((r) => r.cat_id).filter(Boolean)),
+    supabase.from('cat_posts').select('id, author_id, created_at').in('id', rows.map((r) => r.post_id)),
   ]);
-  const urls = await signedUrls((media ?? []).map((m) => m.url));
+  const authorIds = [...new Set((posts ?? []).map((p) => p.author_id))];
+  const [{ data: people }, urls] = await Promise.all([
+    authorIds.length ? supabase.from('profiles').select('id, name').in('id', authorIds) : { data: [] },
+    signedUrls((media ?? []).map((m) => m.url)),
+  ]);
   return rows.map((r) => {
     const m = (media ?? []).find((x) => x.id === r.media_id);
-    return { ...r, src: m ? urls[m.url] : null, name: (cats ?? []).find((c) => c.id === r.cat_id)?.name ?? 'Mystery pet' };
+    const post = (posts ?? []).find((x) => x.id === r.post_id);
+    return {
+      ...r,
+      src: m ? urls[m.url] : null,
+      name: (cats ?? []).find((c) => c.id === r.cat_id)?.name ?? 'Mystery pet',
+      sender: (people ?? []).find((x) => x.id === post?.author_id)?.name ?? null,
+      sentAt: post?.created_at ?? null,
+    };
   });
 }
+
+/** "Sent by Masha at 14:32" — the photo is always from that same day. */
+export const sentLine = (winner) => {
+  if (!winner.sentAt) return null;
+  const time = new Date(winner.sentAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return winner.sender ? `Sent by ${winner.sender} at ${time}` : `Sent at ${time}`;
+};
 
 export const usePetsOfDay = () => useLive(loadWinners, TABLES);
 
@@ -88,7 +107,8 @@ export async function renderTrophyCard(winner) {
   ctx.fillText(winner.name, pad + 8, photoH + pad + 130);
   ctx.font = '600 44px -apple-system, "SF Pro Text", system-ui, sans-serif';
   ctx.fillStyle = 'rgba(26,19,0,0.7)';
-  ctx.fillText(winnerDate(winner.day), pad + 10, photoH + pad + 205);
+  const sent = sentLine(winner);
+  ctx.fillText(sent ? `${winnerDate(winner.day)} · ${sent}` : winnerDate(winner.day), pad + 10, photoH + pad + 205);
 
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }

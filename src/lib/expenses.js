@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { supabase } from './supabase';
 import { useLive } from './useLive';
 import { notify } from './push';
+import { toAmount } from './numbers';
 
 export const SPLIT_CATEGORIES = [
   { id: 'food', label: 'Food & drinks', emoji: '🍽️' },
@@ -67,9 +68,9 @@ export const EXPENSE_CURRENCIES = ['EUR', 'HUF'];
  * mode 'equally': included = { [id]: true|false };  'parts': parts = { [id]: n };  'amounts': amounts = { [id]: n }.
  */
 export function sharesFor(amount, { mode, included, parts, amounts }, people) {
-  const total = Number(amount) || 0;
+  const total = toAmount(amount);
   const ids = people.map((p) => p.id);
-  if (mode === 'amounts') return Object.fromEntries(ids.map((id) => [id, round(Number(amounts[id]) || 0)]));
+  if (mode === 'amounts') return Object.fromEntries(ids.map((id) => [id, round(toAmount(amounts[id]))]));
   const weights = Object.fromEntries(ids.map((id) => [id, mode === 'parts' ? Math.max(0, Number(parts[id]) || 0) : included[id] ? 1 : 0]));
   const sum = Object.values(weights).reduce((a, b) => a + b, 0) || 1;
   // Round each share; the last person absorbs the cent so the shares always add up to the total.
@@ -103,7 +104,7 @@ export function splitFromShares(shares, people) {
 export async function saveSharedExpense(expense, { me, pair }) {
   const row = {
     title: expense.title.trim(),
-    amount: Number(expense.amount),
+    amount: toAmount(expense.amount),
     currency: expense.currency,
     paid_by: expense.paid_by,
     shares: expense.shares,

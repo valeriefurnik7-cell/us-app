@@ -186,7 +186,7 @@ function WishForm({ gift, draft, lists, onClose, onBack }) {
           />
           <div className="mt-1 flex items-center gap-2">
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
               value={form.price}
               onChange={set('price')}

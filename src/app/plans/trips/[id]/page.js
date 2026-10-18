@@ -15,6 +15,7 @@ import Balance from '@/components/expenses/Balance';
 import SharedExpenseSheet from '@/components/expenses/SharedExpenseSheet';
 import { useSharedExpenses } from '@/lib/expenses';
 import { CURRENCIES } from '@/components/wishlist/GiftSheet';
+import { toAmount } from '@/lib/numbers';
 import {
   EXPENSE_CATEGORIES,
   TRIP_STATUSES,
@@ -110,7 +111,7 @@ function ExpenseSheet({ opened, currency, onClose, onAdd }) {
         <span className="text-body font-semibold">New expense</span>
         <Link
           toolbar
-          className={!(Number(form.amount) > 0) ? 'pointer-events-none opacity-40' : ''}
+          className={!(toAmount(form.amount) > 0) ? 'pointer-events-none opacity-40' : ''}
           onClick={async () => {
             await onAdd(form);
             setForm({ category: form.category, amount: '', note: '' });
@@ -136,7 +137,7 @@ function ExpenseSheet({ opened, currency, onClose, onAdd }) {
         <FieldGroup>
           <Field label={`Amount, ${currency}`}>
             <TextInput
-              type="number"
+              type="text"
               inputMode="decimal"
               value={form.amount}
               placeholder="0"
@@ -167,7 +168,7 @@ function Budget({ trip, reload }) {
   })).filter((c) => c.total > 0);
   const save = async (patch) => {
     await saveBudget(trip.id, me, {
-      amount: Number(amount) || 0,
+      amount: toAmount(amount),
       currency,
       visible_to_partner: mine?.visible_to_partner ?? false,
       ...patch,
@@ -230,7 +231,7 @@ function Budget({ trip, reload }) {
       <FieldGroup footer={mine?.visible_to_partner ? `${partner?.name ?? 'She'} can see your budget and spending.` : 'Only you see your budget.'}>
         <Field label="Budget">
           <TextInput
-            type="number"
+            type="text"
             inputMode="decimal"
             value={amount}
             placeholder="0"

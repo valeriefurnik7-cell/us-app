@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ChatBubble, HeartFill, Paw, PlayFill } from 'framework7-icons/react';
+import { HeartFill, Paw, PlayFill } from 'framework7-icons/react';
 import Avatar from '../Avatar';
 import { useSession } from '../SessionProvider';
 import { addHeart } from '@/lib/pets';
@@ -169,17 +169,17 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
           )}
         </div>
         <ReactionPill reactions={post.reactions} mine={mine} />
-        {/* Comment right there, like under an Instagram post — no long press needed */}
-        <span className={`mt-1 flex items-center gap-2 px-1 ${mine ? 'flex-row-reverse' : ''}`}>
-          <span className="text-[11px] text-text-secondary">{timeOf(post.createdAt)}</span>
-          <button
-            type="button"
-            onClick={() => onComments(post)}
-            className="flex h-8 items-center gap-1 rounded-full bg-surface px-2.5 text-caption font-semibold text-text-secondary"
-          >
-            <ChatBubble className="text-[13px]" />
-            {post.commentCount === 0 ? 'Comment' : post.commentCount === 1 ? '1 comment' : `${post.commentCount} comments`}
+        {/* Instagram-style: time · Reply, and "View N comments" once there are some */}
+        <span className={`mt-0.5 flex items-center gap-3 px-1 text-[12px] text-text-secondary ${mine ? 'flex-row-reverse' : ''}`}>
+          <span>{timeOf(post.createdAt)}</span>
+          <button type="button" onClick={() => onComments(post)} className="-my-2 py-2 font-semibold active:opacity-50">
+            Reply
           </button>
+          {post.commentCount > 0 && (
+            <button type="button" onClick={() => onComments(post)} className="-my-2 py-2 active:opacity-50">
+              {post.commentCount === 1 ? 'View 1 comment' : `View ${post.commentCount} comments`}
+            </button>
+          )}
         </span>
       </div>
     </div>

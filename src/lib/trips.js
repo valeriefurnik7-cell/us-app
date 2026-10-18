@@ -5,6 +5,7 @@ import { supabase } from './supabase';
 import { useLive } from './useLive';
 import { withImages } from './images';
 import { removeMedia, uploadMedia } from './media';
+import { toAmount } from './numbers';
 
 export const TRIP_STATUSES = [
   { id: 'planned', label: 'Planned' },
@@ -110,7 +111,7 @@ export const saveBudget = (tripId, me, patch) =>
   supabase.from('trip_budgets').upsert({ trip_id: tripId, profile_id: me.id, ...patch }, { onConflict: 'trip_id,profile_id' });
 
 export const addExpense = (tripId, me, expense) =>
-  supabase.from('trip_expenses').insert({ trip_id: tripId, profile_id: me.id, category: expense.category, amount: Number(expense.amount), note: expense.note?.trim() || null });
+  supabase.from('trip_expenses').insert({ trip_id: tripId, profile_id: me.id, category: expense.category, amount: toAmount(expense.amount), note: expense.note?.trim() || null });
 export const deleteExpense = (expense) => supabase.from('trip_expenses').delete().eq('id', expense.id);
 
 export const addPackingItem = (tripId, me, item) => supabase.from('trip_packing').insert({ trip_id: tripId, profile_id: me.id, item: item.trim() });
