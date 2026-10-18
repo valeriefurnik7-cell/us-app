@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Link, Segmented, SegmentedButton, Sheet, Toggle, Toolbar } from 'konsta/react';
 import { Field, FieldGroup, TextInput } from '../FormRows';
 import { useSession } from '../SessionProvider';
 import { EVENT_TYPES, deleteEvent, saveEvent } from '@/lib/events';
-import { errorMessage } from '@/lib/supabase';
+import { errorMessage, supabase } from '@/lib/supabase';
 
 const pad = (n) => String(n).padStart(2, '0');
 const toDateInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -27,6 +27,29 @@ function initialForm(event, day) {
     note: event?.note ?? '',
     is_private: event?.is_private ?? false,
   };
+}
+
+/** Places someone linked to this meeting from the Places tab. */
+function MeetingPlaces({ eventId }) {
+  const [places, setPlaces] = useState([]);
+  useEffect(() => {
+    supabase
+      .from('places')
+      .select('id, title, category, city')
+      .eq('meeting_event_id', eventId)
+      .then(({ data }) => setPlaces(data ?? []));
+  }, [eventId]);
+  if (!places.length) return null;
+  return (
+    <FieldGroup title="Places for this meeting">
+      {places.map((p) => (
+        <li key={p.id} className="flex min-h-12 items-center border-b border-text-secondary/20 px-4 text-body last:border-0">
+          {p.title}
+          {p.city && <span className="ms-auto text-subhead text-text-secondary">{p.city}</span>}
+        </li>
+      ))}
+    </FieldGroup>
+  );
 }
 
 function EventForm({ event, day, onClose }) {
@@ -126,6 +149,8 @@ function EventForm({ event, day, onClose }) {
             />
           </li>
         </FieldGroup>
+
+        {event?.type === 'meeting' && <MeetingPlaces eventId={event.id} />}
 
         {error && <p className="mx-8 mt-3 text-subhead text-danger">{error}</p>}
 
