@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import NextLink from 'next/link';
+import NextLink from '@/components/AppLink';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Progressbar } from 'konsta/react';
 import { Airplane, MapPin, Plus } from 'framework7-icons/react';
 import Avatar from '../Avatar';

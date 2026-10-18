@@ -1,7 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState } from 'react';
-import NextLink from 'next/link';
+import NextLink from '@/components/AppLink';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tabbar, TabbarLink } from 'konsta/react';
 import { TABS, tabForPath } from '@/lib/tabs';
@@ -109,7 +109,7 @@ export default function AppTabbar() {
     indicator.style.width = `${link.offsetWidth}px`;
     indicator.style.translate = `${link.offsetLeft}px 0`;
     setHoverIndex(null);
-    if (d.index !== activeIndex) router.push(TABS[d.index].href);
+    if (d.index !== activeIndex) router.push(TABS[d.index].href, { transitionTypes: ['tab'] });
   }
 
   return (
@@ -117,6 +117,7 @@ export default function AppTabbar() {
       labels
       icons
       className="fixed bottom-0 left-0 touch-pan-y"
+      style={{ viewTransitionName: 'tabbar' }}
       innerClassName={GLASS}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

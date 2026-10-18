@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import NextLink from 'next/link';
+import NextLink from '@/components/AppLink';
 import { Link, Sheet, Toolbar } from 'konsta/react';
 import Avatar from './Avatar';
 import InviteCard from './InviteCard';

@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useRef, useState } from 'react';
-import NextLink from 'next/link';
+import NextLink from '@/components/AppLink';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel } from 'konsta/react';
 import { ArrowUpCircleFill, Camera, FlameFill, Paw, Plus } from 'framework7-icons/react';
 import Screen from '@/components/Screen';

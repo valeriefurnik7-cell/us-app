@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import NextLink from 'next/link';
+import NextLink from '@/components/AppLink';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel } from 'konsta/react';
 import {
   CalendarBadgePlus,

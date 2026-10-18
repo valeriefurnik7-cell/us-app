@@ -1,10 +1,21 @@
 'use client';
 
+import { ViewTransition } from 'react';
 import { Page } from 'konsta/react';
 
-/** Scrollable screen. Bottom padding keeps content clear of the floating tabbar and home indicator. */
+// Navigation tags → animation classes in globals.css. Untagged updates don't animate.
+const MOTION = { 'nav-forward': 'nav-forward', 'nav-back': 'nav-back', tab: 'tab', default: 'none' };
+
+/**
+ * Scrollable screen. Bottom padding keeps content clear of the floating tabbar and home indicator.
+ * Slides in/out like iOS when navigating deeper or back; crossfades between tabs.
+ */
 export default function Screen({ children, className = 'pb-[calc(var(--k-safe-area-bottom)+104px)]' }) {
-  return <Page className={className}>{children}</Page>;
+  return (
+    <ViewTransition enter={MOTION} exit={MOTION} default="none">
+      <Page className={className}>{children}</Page>
+    </ViewTransition>
+  );
 }
 
 export function EmptyState({ title, text, actionLabel, onAction }) {

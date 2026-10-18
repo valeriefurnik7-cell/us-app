@@ -303,7 +303,7 @@ export default function TripPage({ params }) {
             onClick={async () => {
               setConfirmDelete(false);
               await deleteTrip(trip);
-              router.replace('/plans');
+              router.replace('/plans', { transitionTypes: ['nav-back'] });
             }}
           >
             Delete

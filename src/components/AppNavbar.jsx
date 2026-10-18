@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import NextLink from 'next/link';
+import NextLink from '@/components/AppLink';
 import { Navbar, NavbarBackLink } from 'konsta/react';
 import { GearAlt, Paw, Plus } from 'framework7-icons/react';
 import { useRouter } from 'next/navigation';
@@ -83,7 +83,7 @@ export function InnerNavbar({ title }) {
         <NavbarBackLink
           showText
           text={parent.label}
-          onClick={() => (window.history.length > 1 ? router.back() : router.push(parent.href))}
+          onClick={() => router.push(parent.href, { transitionTypes: ['nav-back'] })}
         />
       }
     />
