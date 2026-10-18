@@ -50,7 +50,7 @@ function ProfileForm({ me, address, onClose, onSaved }) {
 
   return (
     <>
-      <Toolbar top innerClassName="w-full! justify-between">
+      <Toolbar top innerClassName="w-full! items-center! justify-between">
         <div className="left">
           <Link toolbar onClick={onClose}>
             Cancel

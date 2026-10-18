@@ -2,7 +2,7 @@
 
 import NextLink from 'next/link';
 import { Navbar, NavbarBackLink } from 'konsta/react';
-import { GearAlt, Paw } from 'framework7-icons/react';
+import { GearAlt, Paw, Plus } from 'framework7-icons/react';
 import { useRouter } from 'next/navigation';
 import Avatar from './Avatar';
 import { useParentSection } from './AppShell';
@@ -11,14 +11,26 @@ import { useSession } from './SessionProvider';
 // 44×44 hit area around smaller visuals
 const hit = 'flex h-11 min-w-11 items-center justify-center';
 
-/** Tab-root header: logo + pair name, avatars, settings; iOS large title that collapses on scroll. */
-export function AppNavbar({ title }) {
+/**
+ * Tab-root header: logo + pair name, avatars, settings; iOS large title that collapses on scroll.
+ * onAdd shows the accent "+" button; titleAccessory sits next to the large title (e.g. a streak).
+ */
+export function AppNavbar({ title, onAdd, titleAccessory }) {
   const { me, partner, pair } = useSession();
   return (
     <Navbar
       large
       centerTitle
-      title={title}
+      title={
+        titleAccessory ? (
+          <span className="inline-flex items-center gap-2">
+            {title}
+            {titleAccessory}
+          </span>
+        ) : (
+          title
+        )
+      }
       left={
         <span className="flex items-center gap-2 ps-1 pe-3">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-white">
@@ -29,6 +41,13 @@ export function AppNavbar({ title }) {
       }
       right={
         <span className="flex items-center">
+          {onAdd && (
+            <button type="button" onClick={onAdd} aria-label="Add" className={hit}>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white">
+                <Plus className="text-[18px]" />
+              </span>
+            </button>
+          )}
           <NextLink href="/profile/me" aria-label="My profile" className={hit}>
             <Avatar who="me" name={me?.name} />
           </NextLink>
