@@ -27,8 +27,6 @@ import { parseTheme } from '@/lib/appearance';
 import { signedUrls } from '@/lib/media';
 import { distanceKm, localHour, localTime, timeDifference, useHome, useNow, useUpdates, useWeather, weatherKind } from '@/lib/home';
 import UpdatesFeed from '@/components/UpdatesFeed';
-import Balance from '@/components/expenses/Balance';
-import { useSharedExpenses } from '@/lib/expenses';
 import { timeAgo } from '@/lib/dates';
 import { startOfDay } from '@/lib/events';
 
@@ -211,30 +209,6 @@ function Countdown({ meeting, lastMeeting, loading }) {
   );
 }
 
-/** Who owes whom, at a glance; opens the Tricount-style page. */
-function ExpensesCard() {
-  const expenses = useSharedExpenses();
-  return (
-    <section className="mx-4 mt-3">
-      <div className="mb-1.5 flex items-center justify-between px-4">
-        <h3 className="text-caption font-semibold tracking-wide text-text-secondary uppercase">Shared expenses</h3>
-        <NextLink href="/expenses" className="flex h-9 items-center text-subhead text-primary">
-          Open
-        </NextLink>
-      </div>
-      {expenses.loading ? (
-        <div className="h-16 animate-pulse rounded-card bg-surface" />
-      ) : (expenses.data ?? []).length === 0 ? (
-        <NextLink href="/expenses" className="flex h-16 items-center justify-center rounded-card border-2 border-dashed border-text-secondary/25 text-subhead font-semibold text-primary">
-          Split a bill — who paid, who owes
-        </NextLink>
-      ) : (
-        <Balance compact expenses={expenses.data} onChanged={expenses.reload} />
-      )}
-    </section>
-  );
-}
-
 function Counters({ counts }) {
   const items = [
     ['Meetings', counts?.meetings, '/plans/meetings'],
@@ -289,7 +263,6 @@ export default function HomePage() {
       <InviteCard />
       <Countdown meeting={home.data?.nextMeeting} lastMeeting={home.data?.lastMeeting} loading={home.loading} />
       <Counters counts={home.data?.counts} />
-      <ExpensesCard />
       <Updates />
     </Screen>
   );

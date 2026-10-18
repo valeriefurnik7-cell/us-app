@@ -8,6 +8,7 @@ import { Field, FieldGroup, TextInput } from '@/components/FormRows';
 import { useTheme } from '@/components/ThemeProvider';
 import { useSession } from '@/components/SessionProvider';
 import { CURRENCIES } from '@/components/wishlist/GiftSheet';
+import { syncLocation } from '@/lib/location';
 import { AccentSwatches } from '@/components/AppearanceSheet';
 import { applyAccent, parseTheme, saveTheme } from '@/lib/appearance';
 import { isDemo, supabase } from '@/lib/supabase';
@@ -173,6 +174,49 @@ function Accent() {
   );
 }
 
+function Location() {
+  const { me, refresh } = useSession();
+  const auto = me.notify_prefs?.auto_location !== false;
+  const [status, setStatus] = useState(null);
+  return (
+    <FieldGroup title="Location" footer={status ?? `Home shows where each of you is: city, time, weather and the distance between you. Now: ${me.city ?? 'not set'}.`}>
+      <li>
+        <button
+          type="button"
+          onClick={async () => {
+            await supabase.from('profiles').update({ notify_prefs: { ...me.notify_prefs, auto_location: !auto } }).eq('id', me.id);
+            await refresh();
+          }}
+          className="flex min-h-12 w-full items-center gap-3 border-b border-text-secondary/20 px-4 text-start"
+        >
+          <span className="flex-1 text-body">Update my city automatically</span>
+          <span className="pointer-events-none">
+            <Toggle component="span" checked={auto} readOnly />
+          </span>
+        </button>
+      </li>
+      <li>
+        <button
+          type="button"
+          onClick={async () => {
+            setStatus('Finding you…');
+            try {
+              const city = await syncLocation(me, { force: true });
+              await refresh();
+              setStatus(city ? `Updated: you’re in ${city}.` : 'Couldn’t tell the city from here.');
+            } catch {
+              setStatus('Location isn’t allowed. iPhone Settings → Privacy → Location Services → Safari Websites (or Us) → While Using.');
+            }
+          }}
+          className="h-12 w-full px-4 text-start text-body text-primary"
+        >
+          Use my current location now
+        </button>
+      </li>
+    </FieldGroup>
+  );
+}
+
 function Currency() {
   const { me, refresh } = useSession();
   return (
@@ -220,6 +264,8 @@ export default function SettingsPage() {
       </FieldGroup>
 
       <Accent />
+
+      <Location />
 
       <Notifications />
       <Currency />

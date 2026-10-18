@@ -60,7 +60,12 @@ function UpdateCard({ item }) {
     trip: 'Trip',
     place: 'Place',
   }[item.kind];
-  const title = item.kind === 'pet_added' || item.kind === 'cat_added' ? item.text.replace('added ', '').replace(' to the pets', '') : item.detail || item.text;
+  const title =
+    item.kind === 'pet_added' || item.kind === 'cat_added'
+      ? item.text.replace('added ', '').replace(' to the pets', '')
+      : item.kind === 'trip'
+        ? `${item.text.replace('added a trip to ', '')} · ${item.detail}`
+        : item.detail || item.text;
 
   return (
     <NextLink href={item.href} className="flex h-[84px] items-center gap-3 overflow-hidden rounded-card bg-surface px-3">

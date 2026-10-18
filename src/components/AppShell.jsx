@@ -10,7 +10,8 @@ import { AccentFromPair } from './AppearanceSheet';
 import LoginScreen from './auth/LoginScreen';
 import OnboardingScreen from './auth/OnboardingScreen';
 import { TABBAR_SCREENS, TABS, tabForPath } from '@/lib/tabs';
-import { isConfigured } from '@/lib/supabase';
+import { isConfigured, isDemo } from '@/lib/supabase';
+import { autoSyncLocation } from '@/lib/location';
 
 // Remembers the last tab section so inner screens can show "‹ Section" as the back label.
 const SectionContext = createContext(TABS[0]);
@@ -79,11 +80,25 @@ function Gate({ children }) {
   if (status === 'no-pair') return <OnboardingScreen />;
   return (
     <>
+      <LocationSync />
       <AccentFromPair />
       {children}
       <AppTabbar />
     </>
   );
+}
+
+/** Keeps my city (and so time, weather and the distance between us) where the phone actually is. */
+function LocationSync() {
+  const { me, refresh } = useSession();
+  const meId = me?.id;
+  useEffect(() => {
+    if (!meId || isDemo) return;
+    autoSyncLocation(me).then((city) => city && refresh());
+    // once per signed-in user per launch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meId]);
+  return null;
 }
 
 function NotConfigured() {

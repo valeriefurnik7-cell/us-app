@@ -128,9 +128,9 @@ function ExpenseForm({ expense, trips, defaultTripId, onClose }) {
         <Row label="When">
           <input type="date" value={form.spent_on} onChange={set('spent_on')} className="h-12 w-0 min-w-0 flex-1 bg-transparent text-end text-body outline-none" />
         </Row>
-        <Row label="Group">
+        <Row label="Trip">
           <select value={form.trip_id ?? ''} onChange={set('trip_id')} className="min-w-0 flex-1 bg-transparent text-end text-body outline-none">
-            <option value="">Everyday</option>
+            <option value="">No trip — everyday</option>
             {trips.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.destination}
@@ -146,9 +146,9 @@ function ExpenseForm({ expense, trips, defaultTripId, onClose }) {
             key={c.id}
             type="button"
             onClick={() => setForm({ ...form, category: form.category === c.id ? null : c.id })}
-            className={`h-8 shrink-0 rounded-full px-3 text-subhead ${form.category === c.id ? 'bg-accent text-white' : 'bg-surface'}`}
+            className={`h-9 shrink-0 rounded-full px-3 text-subhead ${form.category === c.id ? 'bg-accent text-white' : 'bg-surface'}`}
           >
-            {c.label}
+            {c.emoji} {c.label}
           </button>
         ))}
       </div>

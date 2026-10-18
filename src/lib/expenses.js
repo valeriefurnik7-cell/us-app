@@ -6,12 +6,13 @@ import { useLive } from './useLive';
 import { notify } from './push';
 
 export const SPLIT_CATEGORIES = [
-  { id: 'food', label: 'Food & drinks' },
-  { id: 'transport', label: 'Transport' },
-  { id: 'stay', label: 'Stay' },
-  { id: 'fun', label: 'Fun' },
-  { id: 'shopping', label: 'Shopping' },
-  { id: 'other', label: 'Other' },
+  { id: 'food', label: 'Food & drinks', emoji: '🍽️' },
+  { id: 'transport', label: 'Transport', emoji: '🚕' },
+  { id: 'stay', label: 'Stay', emoji: '🏨' },
+  { id: 'fun', label: 'Fun', emoji: '🎟️' },
+  { id: 'shopping', label: 'Shopping', emoji: '🛍️' },
+  { id: 'gifts', label: 'Gifts', emoji: '🎁' },
+  { id: 'other', label: 'Other', emoji: '✨' },
 ];
 
 const TABLES = ['shared_expenses'];

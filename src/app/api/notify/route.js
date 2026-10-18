@@ -21,10 +21,12 @@ export async function POST(request) {
   if (!token) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const { kind, ...details } = await request.json().catch(() => ({}));
 
-  // Act as the user: RLS and the partner_push_targets() function decide whom we may reach.
-  const supabase = createClient(url, key, { global: { headers: { authorization: `Bearer ${token}` } }, auth: { persistSession: false } });
-  const { data: user } = await supabase.auth.getUser(token);
+  // Check who's asking with a plain client: a client carrying the user's token as a global
+  // header can't call getUser (Supabase answers "requires a valid Bearer token").
+  const { data: user } = await createClient(url, key, { auth: { persistSession: false } }).auth.getUser(token);
   if (!user?.user) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  // Then act as that user for the data: RLS and partner_push_targets() decide whom we may reach.
+  const supabase = createClient(url, key, { global: { headers: { authorization: `Bearer ${token}` } }, auth: { persistSession: false } });
 
   // "Send a test notification" from Settings: to my own devices, with a report of what went wrong.
   if (kind === 'test') {

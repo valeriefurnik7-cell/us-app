@@ -2,23 +2,21 @@
 
 import { useState } from 'react';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Segmented, SegmentedButton } from 'konsta/react';
-import { ArrowRight, Bag, BedDouble, CarFill, Cart, Plus, Sparkles, Ticket } from 'framework7-icons/react';
+import { ArrowRight, Plus } from 'framework7-icons/react';
 import Screen, { EmptyState } from '@/components/Screen';
 import { AppNavbar } from '@/components/AppNavbar';
 import Avatar from '@/components/Avatar';
 import { useSession } from '@/components/SessionProvider';
 import SharedExpenseSheet from '@/components/expenses/SharedExpenseSheet';
-import { balances, settleUp, useSharedExpenses } from '@/lib/expenses';
+import { SPLIT_CATEGORIES, balances, settleUp, useSharedExpenses } from '@/lib/expenses';
 import { money, useTrips } from '@/lib/trips';
 
 const GENERAL = '__general';
 
-const CATEGORY_ICON = { food: Cart, transport: CarFill, stay: BedDouble, fun: Ticket, shopping: Bag, other: Sparkles };
-
 function ExpenseRow({ expense, onOpen }) {
   const { me, partner } = useSession();
   const iPaid = expense.paid_by === me.id;
-  const Icon = CATEGORY_ICON[expense.category] ?? Sparkles;
+  const emoji = SPLIT_CATEGORIES.find((c) => c.id === expense.category)?.emoji ?? '✨';
 
   if (expense.is_settlement) {
     return (
@@ -34,9 +32,7 @@ function ExpenseRow({ expense, onOpen }) {
 
   return (
     <button type="button" onClick={() => onOpen(expense)} className="flex min-h-16 w-full items-center gap-3 border-b border-text-secondary/15 px-4 py-2.5 text-start last:border-0">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-accent/12 text-primary">
-        <Icon className="text-[18px]" />
-      </span>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-surface-2 text-[20px]">{emoji}</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-body font-semibold">{expense.title}</span>
         <span className="block truncate text-subhead text-text-secondary">Paid by {iPaid ? 'me' : partner?.name}</span>
@@ -188,11 +184,11 @@ export default function ExpensesPage() {
 
   return (
     <Screen className="pb-[calc(var(--k-safe-area-bottom)+180px)]">
-      <AppNavbar title="Expenses" onAdd={() => setEditing({ expense: null })} />
+      <AppNavbar title="Expenses" />
 
-      {/* Groups, like separate tricounts */}
+      {/* Filter by trip — each trip keeps its own balance, like separate tricounts */}
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
-        {[{ id: null, label: 'All' }, { id: GENERAL, label: 'Everyday' }, ...usedTrips.map((t) => ({ id: t.id, label: t.destination }))].map((g) => (
+        {[{ id: null, label: 'All' }, { id: GENERAL, label: 'Everyday' }, ...usedTrips.map((t) => ({ id: t.id, label: `✈️ ${t.destination}` }))].map((g) => (
           <button
             key={g.id ?? 'all'}
             type="button"

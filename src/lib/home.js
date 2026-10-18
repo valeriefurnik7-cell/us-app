@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { signedUrls } from './media';
+import { tripDates } from './trips';
 import { supabase } from './supabase';
 import { useLive } from './useLive';
 
@@ -122,7 +123,7 @@ const KIND_FIELDS = {
   watch_items: 'id, title, poster_url',
   dreams: 'id, title, image_url',
   events: 'id, title, start, city',
-  trips: 'id, destination, cover_url',
+  trips: 'id, destination, cover_url, start, end',
   places: 'id, title, city, image_url',
 };
 
@@ -174,7 +175,7 @@ export async function describeActivity(rows) {
         case 'event':
           return { ...r, text: `added plans for ${day(t.start)}`, detail: [t.title, t.city].filter(Boolean).join(' · '), href: '/plans', date: t.start };
         case 'trip':
-          return { ...r, text: `added a trip to ${t.destination}`, href: `/plans/trips/${t.id}`, thumb: t.cover_url };
+          return { ...r, text: `added a trip to ${t.destination}`, detail: tripDates(t) ?? t.destination, href: `/plans/trips/${t.id}`, thumb: t.cover_url };
         case 'place':
           return { ...r, text: t.city ? `added a place in ${t.city}` : 'added a place', detail: t.title, href: '/places', thumb: t.image_url };
         default:
