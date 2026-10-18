@@ -198,3 +198,21 @@ body:has(.fixed.z-40.bg-black\/50:not(.invisible)) .app-bottom-bar {
     animation: none !important;
   }
 }
+
+/* ───────────── Keyboard ─────────────
+ * iOS lays the keyboard over the page. --kb (its height) is set by AppShell, so whatever you type into
+ * sits right on top of the keyboard instead of floating somewhere above or hiding under it.
+ */
+html[data-keyboard] .chat-composer {
+  bottom: calc(var(--kb) + 6px) !important;
+  transition: none;
+}
+html[data-keyboard] .chat-page {
+  padding-bottom: calc(var(--kb) + 72px) !important;
+}
+html[data-keyboard] .k-sheet {
+  translate: 0 calc(-1 * var(--kb));
+}
+html[data-keyboard] .k-sheet .overflow-auto {
+  max-height: calc(var(--vvh) - 72px) !important;
+}

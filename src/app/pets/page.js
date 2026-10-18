@@ -6,7 +6,6 @@ import { Actions, ActionsButton, ActionsGroup, ActionsLabel } from 'konsta/react
 import { ArrowUpCircleFill, Camera, FlameFill, Paw, Plus } from 'framework7-icons/react';
 import Screen from '@/components/Screen';
 import { InnerNavbar } from '@/components/AppNavbar';
-import { useLastMainScreen } from '@/components/AppShell';
 import { useSession } from '@/components/SessionProvider';
 import MessageBubble from '@/components/pets/MessageBubble';
 import MediaViewer from '@/components/pets/MediaViewer';
@@ -91,7 +90,7 @@ function Composer({ onPhoto, onSend }) {
   return (
     <form
       onSubmit={send}
-      className={`app-bottom-bar fixed inset-x-0 z-20 mx-4 flex items-center gap-1 rounded-full bg-ios-light-glass p-1 shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass ${COMPOSER_BOTTOM}`}
+      className={`app-bottom-bar chat-composer fixed inset-x-0 z-20 mx-4 flex items-center gap-1 rounded-full bg-ios-light-glass p-1 shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass ${COMPOSER_BOTTOM}`}
     >
       <button type="button" onClick={onPhoto} aria-label="Send photo" className="flex h-11 w-11 shrink-0 items-center justify-center text-primary">
         <Camera className="text-[24px]" />
@@ -100,6 +99,13 @@ function Composer({ onPhoto, onSend }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Message"
+        // Once the keyboard is up, keep the latest messages right above the input.
+        onFocus={() =>
+          setTimeout(() => {
+            const page = document.querySelector('.chat-page');
+            page?.scrollTo({ top: page.scrollHeight, behavior: 'smooth' });
+          }, 350)
+        }
         enterKeyHint="send"
         className="h-10 min-w-0 flex-1 rounded-full bg-surface-2/70 px-4 text-body outline-none placeholder:text-text-secondary"
       />
@@ -117,7 +123,6 @@ function Composer({ onPhoto, onSend }) {
 
 export default function PetsPage() {
   const { me, partner, pair } = useSession();
-  const lastMain = useLastMainScreen();
   const pets = usePets();
   const feed = useFeed();
   const [uploadFiles, setUploadFiles] = useState(null);
@@ -146,10 +151,9 @@ export default function PetsPage() {
   }, [messages, me.id]);
 
   return (
-    <Screen className="pb-[calc(var(--k-safe-area-bottom)+80px)]">
+    <Screen className="chat-page pb-[calc(var(--k-safe-area-bottom)+80px)]">
       <InnerNavbar
         large={false}
-        back={lastMain}
         title={
           <span className="inline-flex items-center gap-1.5">
             Pets

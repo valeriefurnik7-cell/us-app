@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import NextLink from '@/components/AppLink';
 import { Navbar, NavbarBackLink } from 'konsta/react';
 import { GearAlt, Paw, Plus } from 'framework7-icons/react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Avatar from './Avatar';
-import { useParentSection } from './AppShell';
+import { useBack, useLastMainScreen, useParentSection } from './AppShell';
 import { useSession } from './SessionProvider';
 import PairSheet from './PairSheet';
 import { isDemo } from '@/lib/supabase';
@@ -79,8 +79,18 @@ export function AppNavbar({ title, onAdd, addIcon, titleAccessory, subnavbar }) 
  */
 export function InnerNavbar({ title, back, large = true, subnavbar, right }) {
   const router = useRouter();
+  const pathname = usePathname();
   const parent = useParentSection();
-  const target = back ?? parent;
+  const lastMain = useLastMainScreen();
+  const history = useBack();
+  // Go back to the screen I really came from; without history, to the section (or the last main screen).
+  const target = back ?? history.back ?? (parent.href === pathname ? lastMain : parent);
+
+  // Let the next screen call this one by its real name ("‹ Bobby", "‹ Milan").
+  const { setTitle } = history;
+  useEffect(() => {
+    if (typeof title === 'string' && title) setTitle(pathname, title);
+  }, [title, pathname, setTitle]);
   return (
     <Navbar
       large={large}

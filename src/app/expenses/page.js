@@ -5,7 +5,6 @@ import { Segmented, SegmentedButton } from 'konsta/react';
 import { Plus } from 'framework7-icons/react';
 import Screen, { EmptyState } from '@/components/Screen';
 import { InnerNavbar } from '@/components/AppNavbar';
-import { useLastMainScreen } from '@/components/AppShell';
 import Avatar from '@/components/Avatar';
 import { useSession } from '@/components/SessionProvider';
 import Balance from '@/components/expenses/Balance';
@@ -54,7 +53,6 @@ function ExpenseRow({ expense, trips, onOpen }) {
 
 /** Shared expenses, Tricount-style: who paid, who owes whom, settle up. */
 export default function ExpensesPage() {
-  const lastMain = useLastMainScreen();
   const { me, partner } = useSession();
   const expenses = useSharedExpenses();
   const trips = useTrips();
@@ -82,7 +80,6 @@ export default function ExpensesPage() {
     <Screen>
       <InnerNavbar
         title="Expenses"
-        back={lastMain}
         right={
           <button type="button" aria-label="Add expense" onClick={() => setEditing({ expense: null })} className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white">
             <Plus className="text-[18px]" />

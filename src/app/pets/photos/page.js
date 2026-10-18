@@ -4,14 +4,12 @@ import { useState } from 'react';
 import { PlayFill } from 'framework7-icons/react';
 import Screen, { EmptyState } from '@/components/Screen';
 import { InnerNavbar } from '@/components/AppNavbar';
-import { useLastMainScreen } from '@/components/AppShell';
 import MediaViewer from '@/components/pets/MediaViewer';
 import { deleteMediaItem, usePets, useFeed } from '@/lib/pets';
 import { useSession } from '@/components/SessionProvider';
 
 /** Every pet photo and video ever sent, newest first, filterable by pet. */
 export default function PetPhotosPage() {
-  const lastMain = useLastMainScreen();
   const { me } = useSession();
   const pets = usePets();
   const feed = useFeed();
@@ -26,7 +24,7 @@ export default function PetPhotosPage() {
 
   return (
     <Screen>
-      <InnerNavbar title="Pet photos" back={lastMain} />
+      <InnerNavbar title="Pet photos" />
 
       {(pets.data ?? []).length > 1 && (
         <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto px-4">

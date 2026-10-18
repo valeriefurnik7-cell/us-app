@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 import Screen, { EmptyState } from '@/components/Screen';
 import { InnerNavbar } from '@/components/AppNavbar';
-import { useLastMainScreen } from '@/components/AppShell';
 import EventSheet from '@/components/plans/EventSheet';
 import { supabase } from '@/lib/supabase';
 import { useLive } from '@/lib/useLive';
@@ -34,7 +33,6 @@ function MeetingRow({ meeting, onOpen, past }) {
 
 /** Every meeting, upcoming first — opened from the Meetings counter on Home. */
 export default function MeetingsPage() {
-  const lastMain = useLastMainScreen();
   const [editing, setEditing] = useState(null);
   const load = useCallback(async () => {
     const now = new Date();
@@ -53,7 +51,7 @@ export default function MeetingsPage() {
 
   return (
     <Screen>
-      <InnerNavbar title="Meetings" back={lastMain} />
+      <InnerNavbar title="Meetings" />
       {loading ? (
         <div className="mx-4 h-32 animate-pulse rounded-card bg-surface" />
       ) : all.length === 0 ? (
