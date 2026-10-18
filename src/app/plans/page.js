@@ -69,6 +69,9 @@ const SEGMENT_KEY = 'plansSegment';
 
 function readSegment() {
   try {
+    // ?tab=trips (e.g. from the Trips counter on Home) wins over the remembered tab.
+    const fromLink = new URLSearchParams(window.location.search).get('tab');
+    if (fromLink === 'trips' || fromLink === 'calendar') return fromLink;
     return sessionStorage.getItem(SEGMENT_KEY) || 'calendar';
   } catch {
     return 'calendar';

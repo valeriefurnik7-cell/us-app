@@ -8,6 +8,6 @@ import { TABBAR_SCREENS } from '@/lib/tabs';
  * switching to a tab crossfades, going deeper slides in from the right like iOS.
  */
 export default function AppLink({ href, transitionTypes, ...props }) {
-  const type = TABBAR_SCREENS.has(href) ? 'tab' : 'nav-forward';
+  const type = TABBAR_SCREENS.has(String(href).split('?')[0]) ? 'tab' : 'nav-forward';
   return <NextLink href={href} transitionTypes={transitionTypes ?? [type]} {...props} />;
 }

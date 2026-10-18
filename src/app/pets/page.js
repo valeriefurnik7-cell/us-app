@@ -57,9 +57,11 @@ function PetsRow({ pets, loading, onAdd }) {
         <button
           type="button"
           onClick={onAdd}
-          className="flex h-10 shrink-0 items-center gap-1 rounded-full border border-dashed border-text-secondary/40 px-3.5 text-subhead font-semibold text-primary"
+          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-ios-light-glass py-1 ps-1 pe-3.5 text-subhead font-semibold text-primary shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass"
         >
-          <Plus className="text-[16px]" />
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white">
+            <Plus className="text-[16px]" />
+          </span>
           Add pet
         </button>
       )}

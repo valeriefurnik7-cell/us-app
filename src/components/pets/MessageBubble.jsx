@@ -142,6 +142,8 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
       <div className={`flex max-w-[78%] flex-col ${mine ? 'items-end' : 'items-start'}`}>
         <div
           {...(hasMedia ? {} : longPress.handlers)}
+          // A plain tap on the text opens the menu too (react, copy, delete) — long press isn't obvious.
+          onClick={hasMedia ? undefined : () => !longPress.fired.current && onMenu(post)}
           className={`overflow-hidden rounded-[20px] select-none ${hasMedia ? 'w-64' : ''} ${
             mine ? 'rounded-br-md bg-accent text-white' : 'rounded-bl-md bg-surface text-text'
           }`}
@@ -155,7 +157,7 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
             />
           )}
           {(post.caption || tagged.length > 0) && (
-            <div className="px-3.5 py-2">
+            <div className="px-3.5 py-2" onClick={hasMedia ? () => onMenu(post) : undefined}>
               {tagged.length > 0 && (
                 <p className={`flex items-center gap-1 text-caption font-semibold ${mine ? 'text-white/80' : 'text-text-secondary'}`}>
                   <Paw className="text-[12px]" />

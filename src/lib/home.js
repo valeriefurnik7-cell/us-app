@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { signedUrls } from './media';
 import { supabase } from './supabase';
 import { useLive } from './useLive';
 
@@ -97,9 +98,23 @@ export const useHome = () => useLive(loadHome, HOME_TABLES);
 // ───────────── Activity feed ─────────────
 
 const KIND_TABLE = { pet_photo: 'cat_posts', cat_photo: 'cat_posts', pet_added: 'cats', cat_added: 'cats', gift: 'gifts', watch: 'watch_items', dream: 'dreams', event: 'events', trip: 'trips', place: 'places' };
-const KIND_FIELDS = { cat_posts: 'id', cats: 'id, name', gifts: 'id, title', watch_items: 'id, title', dreams: 'id, title', events: 'id, title, start', trips: 'id, destination', places: 'id, title, city' };
+const KIND_FIELDS = {
+  cat_posts: 'id, caption',
+  cats: 'id, name, cover_url',
+  gifts: 'id, title, image_url',
+  watch_items: 'id, title, poster_url',
+  dreams: 'id, title, image_url',
+  events: 'id, title, start, city',
+  trips: 'id, destination, cover_url',
+  places: 'id, title, city, image_url',
+};
 
-/** Turns raw activity rows into "added a place in Vienna"-style lines with a link. Gift reservations never get here. */
+const day = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+
+/**
+ * Turns raw activity rows into feed items: "added a place in Vienna", a link and a thumbnail.
+ * Gift reservations never get here (they're not written to activity).
+ */
 export async function describeActivity(rows) {
   const byTable = {};
   rows.forEach((r) => {
@@ -114,33 +129,54 @@ export async function describeActivity(rows) {
     })
   );
 
-  return rows
+  // First photo of each pet message, for the thumbnail.
+  const postIds = byTable.cat_posts ?? [];
+  const firstPhoto = {};
+  if (postIds.length) {
+    const { data } = await supabase.from('cat_post_media').select('post_id, url, order').in('post_id', postIds);
+    (data ?? []).sort((a, b) => a.order - b.order).forEach((m) => (firstPhoto[m.post_id] ??= m.url));
+  }
+
+  const items = rows
     .map((r) => {
       const t = targets[r.target_id];
       if (!t) return null; // deleted since
-      const day = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
       switch (r.kind) {
         case 'pet_photo':
         case 'cat_photo':
-          return { ...r, text: 'sent a pet photo', href: '/pets' };
+          return { ...r, text: 'sent a pet photo', detail: t.caption, href: '/pets', thumb: firstPhoto[t.id] };
         case 'pet_added':
         case 'cat_added':
-          return { ...r, text: `added ${t.name} to the pets`, href: `/pets/${t.id}` };
+          return { ...r, text: `added ${t.name} to the pets`, href: `/pets/${t.id}`, thumb: t.cover_url };
         case 'gift':
-          return { ...r, text: `added a wish: ${t.title}`, href: '/wishlist' };
+          return { ...r, text: 'added a wish', detail: t.title, href: '/wishlist', thumb: t.image_url };
         case 'watch':
-          return { ...r, text: `wants to watch ${t.title}`, href: '/wishlist' };
+          return { ...r, text: 'wants to watch', detail: t.title, href: '/wishlist', thumb: t.poster_url };
         case 'dream':
-          return { ...r, text: `added a dream: ${t.title}`, href: '/wishlist' };
+          return { ...r, text: 'added a dream', detail: t.title, href: '/wishlist', thumb: t.image_url };
         case 'event':
-          return { ...r, text: `added plans for ${day(t.start)}`, href: '/plans' };
+          return { ...r, text: `added plans for ${day(t.start)}`, detail: [t.title, t.city].filter(Boolean).join(' · '), href: '/plans' };
         case 'trip':
-          return { ...r, text: `added a trip to ${t.destination}`, href: `/plans/trips/${t.id}` };
+          return { ...r, text: `added a trip to ${t.destination}`, href: `/plans/trips/${t.id}`, thumb: t.cover_url };
         case 'place':
-          return { ...r, text: t.city ? `added a place in ${t.city}` : `added ${t.title}`, href: '/places' };
+          return { ...r, text: t.city ? `added a place in ${t.city}` : 'added a place', detail: t.title, href: '/places', thumb: t.image_url };
         default:
           return null;
       }
     })
     .filter(Boolean);
+
+  const urls = await signedUrls(items.map((i) => i.thumb).filter(Boolean));
+  return items.map((i) => ({ ...i, thumbSrc: i.thumb ? urls[i.thumb] ?? null : null }));
+}
+
+const FEED_TABLES = ['activity'];
+
+/** Everything both of you added, newest first — the Updates feed. */
+export function useUpdates(limit) {
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('activity').select('*').order('created_at', { ascending: false }).limit(limit);
+    return describeActivity(data ?? []);
+  }, [limit]);
+  return useLive(load, FEED_TABLES);
 }

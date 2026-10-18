@@ -200,6 +200,13 @@ export function buildDemoDb() {
       { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'gift', target_id: gifts.scarf, created_at: hoursAgo(7) },
       { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'watch', target_id: watch.severance, created_at: hoursAgo(1) },
       { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'pet_photo', target_id: posts.find((p) => p.author_id === DEMO_HER && p.caption?.startsWith('Luna found'))?.id, created_at: hoursAgo(1.2) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'pet_photo', target_id: posts.find((p) => p.caption?.startsWith('Found Bobby'))?.id, created_at: hoursAgo(3) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'place', target_id: places.thermal, created_at: hoursAgo(40) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'place', target_id: places.central, created_at: hoursAgo(90) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'watch', target_id: watch.dune2, created_at: hoursAgo(30) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'pet_photo', target_id: posts.find((p) => p.author_id === DEMO_HER && p.caption?.startsWith('Luna has'))?.id, created_at: hoursAgo(50) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'trip', target_id: trip, created_at: hoursAgo(200) },
+      { id: id('6'), pair_id: PAIR, actor_id: DEMO_ME, kind: 'gift', target_id: gifts.kallax, created_at: hoursAgo(100) },
     ],
     push_subscriptions: [],
   };

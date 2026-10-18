@@ -24,7 +24,8 @@ import { useSession } from '@/components/SessionProvider';
 import AppearanceSheet from '@/components/AppearanceSheet';
 import { parseTheme } from '@/lib/appearance';
 import { signedUrls } from '@/lib/media';
-import { describeActivity, localTime, timeDifference, useHome, useNow, useWeather, weatherKind } from '@/lib/home';
+import { localTime, timeDifference, useHome, useNow, useUpdates, useWeather, weatherKind } from '@/lib/home';
+import UpdatesFeed from '@/components/UpdatesFeed';
 import { timeAgo } from '@/lib/dates';
 import { startOfDay } from '@/lib/events';
 
@@ -165,14 +166,26 @@ function Countdown({ meeting, loading }) {
 
 function Counters({ counts }) {
   const items = [
-    ['Meetings', counts?.meetings, '/plans'],
-    ['Trips', counts?.trips, '/plans'],
-    ['Pet photos', counts?.petPhotos, '/pets'],
+    ['Meetings', counts?.meetings, '/plans/meetings'],
+    ['Trips', counts?.trips, '/plans?tab=trips'],
+    ['Pet photos', counts?.petPhotos, '/pets/photos'],
   ];
   return (
     <div className="mx-4 mt-3 grid grid-cols-3 gap-2">
       {items.map(([label, value, href]) => (
-        <NextLink key={label} href={href} className="rounded-card bg-surface px-2 py-3 text-center">
+        <NextLink
+          key={label}
+          href={href}
+          // Plans opens on the tab it remembers; point it at Trips before going there.
+          onClick={() => {
+            if (href.includes('tab=trips')) {
+              try {
+                sessionStorage.setItem('plansSegment', 'trips');
+              } catch {}
+            }
+          }}
+          className="rounded-card bg-surface px-2 py-3 text-center"
+        >
           <p className="text-title font-bold tabular-nums">{value ?? '–'}</p>
           <p className="text-caption text-text-secondary">{label}</p>
         </NextLink>
@@ -181,47 +194,17 @@ function Counters({ counts }) {
   );
 }
 
-function Activity({ rows }) {
-  const { me, partner } = useSession();
-  const [items, setItems] = useState(null);
-  const theirs = rows.filter((r) => r.actor_id !== me.id);
-  const key = theirs.map((r) => r.id).join();
-
-  useEffect(() => {
-    let cancelled = false;
-    describeActivity(theirs).then((list) => !cancelled && setItems(list.slice(0, 5)));
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- rows are identified by their ids
-  }, [key]);
-
-  if (!partner) return null;
+function Updates() {
+  const updates = useUpdates(6);
   return (
     <section className="mt-6">
-      <h3 className="mx-8 mb-1.5 text-caption font-semibold tracking-wide text-text-secondary uppercase">From {partner.name}</h3>
-      {items === null ? (
-        <div className="mx-4 h-24 animate-pulse rounded-card bg-surface" />
-      ) : items.length === 0 ? (
-        <p className="mx-4 rounded-card bg-surface px-4 py-6 text-center text-subhead text-text-secondary">Nothing new from {partner.name} yet</p>
-      ) : (
-        <ul className="mx-4 overflow-hidden rounded-card bg-surface">
-          {items.map((a) => (
-            <li key={a.id}>
-              <NextLink href={a.href} className="flex min-h-14 items-center gap-3 border-b border-text-secondary/15 px-3 py-2">
-                <Avatar who="her" name={partner.name} src={partner.avatar} />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-body">
-                    <b className="font-semibold">{partner.name}</b> {a.text}
-                  </span>
-                  <span className="text-caption text-text-secondary">{timeAgo(a.created_at)}</span>
-                </span>
-                <ChevronRight className="shrink-0 text-[14px] text-text-secondary/60" />
-              </NextLink>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="mx-4 mb-1.5 flex items-center justify-between px-4">
+        <h3 className="text-caption font-semibold tracking-wide text-text-secondary uppercase">Updates</h3>
+        <NextLink href="/updates" className="flex h-9 items-center text-subhead text-primary">
+          See all
+        </NextLink>
+      </div>
+      <UpdatesFeed items={updates.data ?? []} loading={updates.loading} empty="Pet photos, wishes, plans and places you both add show up here" />
     </section>
   );
 }
@@ -235,7 +218,7 @@ export default function HomePage() {
       <InviteCard />
       <Countdown meeting={home.data?.nextMeeting} loading={home.loading} />
       <Counters counts={home.data?.counts} />
-      <Activity rows={home.data?.activity ?? []} />
+      <Updates />
     </Screen>
   );
 }
