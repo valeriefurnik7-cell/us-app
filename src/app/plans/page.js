@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Chip, Segmented, SegmentedButton } from 'konsta/react';
 import { CalendarBadgePlus, ChevronLeft, ChevronRight, LockFill } from 'framework7-icons/react';
-import Screen, { EmptyState } from '@/components/Screen';
+import Screen from '@/components/Screen';
 import { AppNavbar } from '@/components/AppNavbar';
 import Avatar from '@/components/Avatar';
 import { useSession } from '@/components/SessionProvider';
 import EventSheet from '@/components/plans/EventSheet';
+import TripsTab from '@/components/plans/TripsTab';
 import { FILTERS, EVENT_TYPES, addDays, colorOf, matchesFilter, onDay, sameDay, startOfDay, startOfWeek, useEvents } from '@/lib/events';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -39,7 +41,8 @@ function EventRow({ event, onOpen }) {
   const mine = event.author_id === me.id;
   const author = mine ? me : partner;
   const type = EVENT_TYPES.find((t) => t.id === event.type)?.label;
-  const editable = !event.masked && !event.birthday;
+  // Trips open their own page; quick marks and birthdays aren't edited from the calendar.
+  const editable = !event.masked && !event.birthday && event.source !== 'quick_trip';
   return (
     <button
       type="button"
@@ -62,9 +65,28 @@ function EventRow({ event, onOpen }) {
   );
 }
 
+const SEGMENT_KEY = 'plansSegment';
+
+function readSegment() {
+  try {
+    return sessionStorage.getItem(SEGMENT_KEY) || 'calendar';
+  } catch {
+    return 'calendar';
+  }
+}
+
 export default function PlansPage() {
   const { me, partner } = useSession();
-  const [segment, setSegment] = useState('calendar');
+  const router = useRouter();
+  // The app renders after sign-in on the client, so sessionStorage is available here.
+  const [segment, setSegmentState] = useState(readSegment);
+  const [tripAdding, setTripAdding] = useState(false);
+  const setSegment = (next) => {
+    setSegmentState(next);
+    try {
+      sessionStorage.setItem(SEGMENT_KEY, next);
+    } catch {}
+  };
   const [view, setView] = useState('month');
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [selected, setSelected] = useState(() => startOfDay(new Date()));
@@ -90,8 +112,8 @@ export default function PlansPage() {
     <Screen>
       <AppNavbar
         title="Plans"
-        onAdd={segment === 'calendar' ? () => setEditing({ event: null }) : undefined}
-        addIcon={CalendarBadgePlus}
+        onAdd={segment === 'calendar' ? () => setEditing({ event: null }) : () => setTripAdding(true)}
+        addIcon={segment === 'calendar' ? CalendarBadgePlus : undefined}
       />
 
       <div className="mx-4 mt-2">
@@ -106,7 +128,7 @@ export default function PlansPage() {
       </div>
 
       {segment === 'trips' ? (
-        <EmptyState title="Trips are coming next" text="Destinations, your own budgets and packing lists" />
+        <TripsTab adding={tripAdding} onAddClose={setTripAdding} />
       ) : (
         <>
           <div className="mx-4 mt-3 rounded-card bg-surface p-3">
@@ -208,7 +230,11 @@ export default function PlansPage() {
           ) : (
             <div className="mx-4 space-y-2">
               {dayEvents.map((e) => (
-                <EventRow key={e.id} event={e} onOpen={(event) => setEditing({ event })} />
+                <EventRow
+                  key={e.id}
+                  event={e}
+                  onOpen={(event) => (event.source === 'trip' ? router.push(`/plans/trips/${event.id}`) : setEditing({ event }))}
+                />
               ))}
             </div>
           )}

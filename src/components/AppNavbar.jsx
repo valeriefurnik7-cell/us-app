@@ -17,7 +17,8 @@ const hit = "relative flex h-9 min-w-9 items-center justify-center after:absolut
  * Tab-root header: logo + pair name, avatars, settings; iOS large title that collapses on scroll.
  * onAdd shows the accent "+" button; titleAccessory sits next to the large title (e.g. a streak).
  */
-export function AppNavbar({ title, onAdd, addIcon: AddIcon = Plus, titleAccessory, subnavbar }) {
+export function AppNavbar({ title, onAdd, addIcon, titleAccessory, subnavbar }) {
+  const AddIcon = addIcon ?? Plus;
   const { me, partner, pair } = useSession();
   const [pairOpen, setPairOpen] = useState(false);
   return (
