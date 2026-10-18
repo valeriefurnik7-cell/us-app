@@ -177,7 +177,7 @@ export default function DreamsTab({ dreams, loading, adding, onAddClose, onChang
           ))}
         </div>
       ) : open.length === 0 && archive.length === 0 ? (
-        <EmptyState title="No dreams yet" text="Big wishes — ours or just yours" />
+        <EmptyState title="No dreams yet" text="Big wishes — ours or just yours" actionLabel="Add a dream" onAction={() => setEditing({ dream: null })} />
       ) : (
         <div className="mx-4 mt-3 grid grid-cols-2 gap-3">
           {open.map((d) => (

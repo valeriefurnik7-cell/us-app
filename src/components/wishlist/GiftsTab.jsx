@@ -71,7 +71,7 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd }) {
         </div>
       ) : open.length === 0 && given.length === 0 ? (
         whose === 'mine' ? (
-          <EmptyState title="Your wishlist is empty" text="Add things you’d love to get" />
+          <EmptyState title="Your wishlist is empty" text="Add things you’d love to get" actionLabel="Add a wish" onAction={onAdd} />
         ) : (
           <EmptyState title={`${partner?.name ?? 'She'} hasn’t added wishes yet`} />
         )

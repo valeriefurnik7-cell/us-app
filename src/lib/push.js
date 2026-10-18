@@ -34,20 +34,36 @@ export async function currentSubscription() {
   return registration ? registration.pushManager.getSubscription() : null;
 }
 
-/** Asks for permission (must run from a tap) and saves this device. */
+/**
+ * Asks for permission (must run from a tap) and saves this device.
+ * Returns null when it worked, otherwise a sentence explaining what went wrong.
+ */
 export async function enablePush(me) {
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return false;
-  const registration = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register('/sw.js'));
-  await navigator.serviceWorker.ready;
-  const subscription =
-    (await registration.pushManager.getSubscription()) ??
-    (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUBLIC_KEY) }));
-  const json = subscription.toJSON();
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert({ profile_id: me.id, endpoint: json.endpoint, keys: json.keys }, { onConflict: 'endpoint' });
-  return !error;
+  let step = 'permission';
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      return permission === 'denied'
+        ? 'Notifications are blocked for this app. Turn them on in iPhone Settings → Notifications → Us.'
+        : 'You didn’t allow notifications. Try again and tap “Allow”.';
+    }
+    step = 'service worker';
+    const registration = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register('/sw.js'));
+    await navigator.serviceWorker.ready;
+    step = 'subscribe';
+    const subscription =
+      (await registration.pushManager.getSubscription()) ??
+      (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PUBLIC_KEY) }));
+    step = 'save';
+    const json = subscription.toJSON();
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .upsert({ profile_id: me.id, endpoint: json.endpoint, keys: json.keys }, { onConflict: 'endpoint' });
+    if (error) throw error;
+    return null;
+  } catch (e) {
+    return `Couldn’t turn on notifications (${step}: ${e?.message ?? e}).`;
+  }
 }
 
 export async function disablePush() {

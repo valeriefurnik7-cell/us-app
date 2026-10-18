@@ -153,7 +153,12 @@ export default function PlacesPage() {
         tab === 'been' ? (
           <EmptyState title="No visited places yet" text="Open a place and tap “We were there”" />
         ) : (
-          <EmptyState title="No places yet" text="Paste a Google Maps link or search by name" />
+          <EmptyState
+            title="No places yet"
+            text="Where to go when you meet — paste a Google Maps link or search by name"
+            actionLabel="Add a place"
+            onAction={() => setEditing({ place: null })}
+          />
         )
       ) : (
         groups.map(([name, list]) => (

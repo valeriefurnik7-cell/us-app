@@ -7,11 +7,16 @@ export default function Screen({ children, className = 'pb-[calc(var(--k-safe-ar
   return <Page className={className}>{children}</Page>;
 }
 
-export function EmptyState({ title, text }) {
+export function EmptyState({ title, text, actionLabel, onAction }) {
   return (
     <div className="mx-4 mt-3 rounded-card bg-surface px-4 py-10 text-center">
       <p className="text-body font-semibold">{title}</p>
       {text && <p className="mt-1 text-subhead text-text-secondary">{text}</p>}
+      {actionLabel && (
+        <button type="button" onClick={onAction} className="mt-4 h-11 rounded-full bg-accent px-5 text-body font-semibold text-white">
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }

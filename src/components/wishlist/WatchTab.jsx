@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Chip } from 'konsta/react';
-import { Ellipsis, Film, PinFill, Search, Shuffle, Tv } from 'framework7-icons/react';
+import { Ellipsis, Film, PinFill, Plus, Search, Shuffle, Tv } from 'framework7-icons/react';
 import Avatar from '../Avatar';
 import { EmptyState } from '../Screen';
 import { useSession } from '../SessionProvider';
@@ -107,7 +107,7 @@ function WatchCard({ item, onOpen, onMenu }) {
   );
 }
 
-export default function WatchTab({ items, loading, onOpen, onMenu }) {
+export default function WatchTab({ items, loading, onOpen, onMenu, onAdd }) {
   const [query, setQuery] = useState('');
   const [type, setType] = useState(null);
   const [status, setStatus] = useState(null);
@@ -123,18 +123,32 @@ export default function WatchTab({ items, loading, onOpen, onMenu }) {
 
   return (
     <>
-      <RandomPick items={items.filter((i) => i.status === 'want')} onOpen={onOpen} />
+      {/* Controls only make sense once there is something to pick from. */}
+      {items.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={onAdd}
+            className="mx-4 mt-3 flex h-12 w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-card border-2 border-dashed border-text-secondary/25 text-body font-semibold text-primary"
+          >
+            <Plus className="text-[18px]" />
+            Add a movie or series
+          </button>
 
-      <label className="mx-4 mt-3 flex h-10 items-center gap-2 rounded-control bg-surface-2 px-3">
-        <Search className="text-[16px] text-text-secondary" />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="h-full min-w-0 flex-1 bg-transparent text-body outline-none" />
-      </label>
+          <RandomPick items={items.filter((i) => i.status === 'want')} onOpen={onOpen} />
 
-      <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto px-4">
-        <FilterChips options={[{ id: 'movie', label: 'Movies' }, { id: 'series', label: 'Series' }]} value={type} onChange={setType} />
-        <FilterChips options={WATCH_STATUSES.map((s) => ({ id: s.id, label: s.label.replace(' to watch', '') }))} value={status} onChange={setStatus} />
-        <FilterChips options={genres.map((g) => ({ id: g, label: g }))} value={genre} onChange={setGenre} />
-      </div>
+          <label className="mx-4 mt-3 flex h-10 items-center gap-2 rounded-control bg-surface-2 px-3">
+            <Search className="text-[16px] text-text-secondary" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="h-full min-w-0 flex-1 bg-transparent text-body outline-none" />
+          </label>
+
+          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto px-4">
+            <FilterChips options={[{ id: 'movie', label: 'Movies' }, { id: 'series', label: 'Series' }]} value={type} onChange={setType} />
+            <FilterChips options={WATCH_STATUSES.map((s) => ({ id: s.id, label: s.label.replace(' to watch', '') }))} value={status} onChange={setStatus} />
+            <FilterChips options={genres.map((g) => ({ id: g, label: g }))} value={genre} onChange={setGenre} />
+          </div>
+        </>
+      )}
 
       {loading ? (
         <div className="mx-4 mt-3 space-y-2">
@@ -143,7 +157,7 @@ export default function WatchTab({ items, loading, onOpen, onMenu }) {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <EmptyState title="Nothing to watch yet" text="Tap + to add a movie or a series" />
+        <EmptyState title="Nothing to watch yet" text="Movies and series you want to watch together" actionLabel="Add a movie" onAction={onAdd} />
       ) : filtered.length === 0 ? (
         <EmptyState title="Nothing matches" />
       ) : (

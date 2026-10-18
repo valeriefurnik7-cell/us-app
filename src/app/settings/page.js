@@ -42,11 +42,14 @@ function Notifications() {
   const support = pushSupport();
   const [enabled, setEnabled] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState(null);
   const prefs = me.notify_prefs ?? {};
 
   useEffect(() => {
     if (support !== 'supported') return;
-    currentSubscription().then((s) => setEnabled(Boolean(s) && Notification.permission === 'granted'));
+    currentSubscription()
+      .then((s) => setEnabled(Boolean(s) && Notification.permission === 'granted'))
+      .catch(() => setEnabled(false));
   }, [support]);
 
   const savePrefs = async (patch) => {
@@ -55,21 +58,26 @@ function Notifications() {
   };
 
   async function toggleDevice() {
+    if (busy) return;
     setBusy(true);
+    setProblem(null);
     if (enabled) {
-      await disablePush();
+      await disablePush().catch(() => {});
       setEnabled(false);
     } else {
-      setEnabled(await enablePush(me));
+      const error = await enablePush(me);
+      setEnabled(!error);
+      setProblem(error);
     }
     setBusy(false);
   }
 
-  const footer =
-    support === 'needs-install'
+  const footer = problem
+    ? problem
+    : support === 'needs-install'
       ? 'On iPhone, notifications work only after you add the app to the Home Screen (Share → Add to Home Screen) and open it from there.'
       : support === 'unsupported'
-        ? 'Notifications aren’t available here.'
+        ? 'Notifications aren’t available here. On iPhone you need iOS 16.4 or newer.'
         : enabled === false && typeof Notification !== 'undefined' && Notification.permission === 'denied'
           ? 'Notifications are blocked. Turn them on in iPhone Settings → Notifications → Us.'
           : 'This turns notifications on for this phone.';
@@ -77,11 +85,21 @@ function Notifications() {
   return (
     <>
       <FieldGroup title="Notifications" footer={footer}>
-        <Field label="This phone">
-          <span className="flex flex-1 justify-end">
-            <Toggle checked={Boolean(enabled)} disabled={support !== 'supported' || busy || enabled === null} onChange={toggleDevice} />
-          </span>
-        </Field>
+        {/* The whole row is tappable, not only the small switch. */}
+        <li>
+          <button
+            type="button"
+            disabled={support !== 'supported'}
+            onClick={toggleDevice}
+            className="flex min-h-12 w-full items-center gap-3 px-4 text-start disabled:opacity-50"
+          >
+            <span className="flex-1 text-body">This phone</span>
+            {busy && <span className="text-subhead text-text-secondary">…</span>}
+            <span className="pointer-events-none">
+              <Toggle component="span" checked={Boolean(enabled)} readOnly />
+            </span>
+          </button>
+        </li>
       </FieldGroup>
 
       {enabled && (

@@ -60,7 +60,13 @@ export default function WishlistPage() {
         <GiftsTab gifts={gifts.data ?? []} loading={gifts.loading} onOpen={(g) => setGiftId(g.id)} onAdd={() => setGiftEdit({ gift: null })} />
       )}
       {segment === 'watch' && (
-        <WatchTab items={watch.data ?? []} loading={watch.loading} onOpen={(i) => setWatchId(i.id)} onMenu={setWatchMenu} />
+        <WatchTab
+          items={watch.data ?? []}
+          loading={watch.loading}
+          onOpen={(i) => setWatchId(i.id)}
+          onMenu={setWatchMenu}
+          onAdd={() => setWatchAdd(true)}
+        />
       )}
       {segment === 'dreams' && (
         <DreamsTab dreams={dreams.data ?? []} loading={dreams.loading} adding={dreamAdd} onAddClose={() => setDreamAdd(false)} onChanged={dreams.reload} />
