@@ -43,7 +43,7 @@ function NotConfigured() {
   return (
     <Page className="flex items-center">
       <Block strong inset className="text-center">
-        Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.
+        Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.
       </Block>
     </Page>
   );
