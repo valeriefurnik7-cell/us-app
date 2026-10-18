@@ -31,79 +31,55 @@ function Byline({ item, light }) {
 
 const ICONS = { gift: Gift, watch: Film, dream: Sparkles, place: MapPin, trip: Airplane, pet_added: Paw, cat_added: Paw };
 
-/** Each kind of update has its own shape, so the feed reads like a magazine, not a list. */
+const ICON_TINT = {
+  pet_photo: 'bg-her/15 text-her',
+  cat_photo: 'bg-her/15 text-her',
+  pet_added: 'bg-her/15 text-her',
+  cat_added: 'bg-her/15 text-her',
+  gift: 'bg-me/15 text-me',
+  watch: 'bg-accent/15 text-primary',
+  dream: 'bg-together/20 text-together',
+  place: 'bg-her/15 text-her',
+  trip: 'bg-accent/15 text-primary',
+};
+
+/** Every update is the same size; the picture (or a date page / icon) tells the kinds apart. */
 function UpdateCard({ item }) {
-  const base = 'block overflow-hidden rounded-card bg-surface';
-
-  // Pet photos and trips/places with a picture: big photo with the text on it.
-  if (item.thumbSrc && ['pet_photo', 'cat_photo', 'trip', 'place'].includes(item.kind)) {
-    return (
-      <NextLink href={item.href} className={`${base} relative`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={item.thumbSrc} alt="" loading="lazy" className={`w-full object-cover ${item.kind.includes('photo') ? 'aspect-[4/3]' : 'aspect-[2/1]'}`} />
-        <span className="absolute inset-x-0 bottom-0 bg-black/45 px-3 pt-2 pb-2.5 text-white backdrop-blur-sm">
-          <span className="block text-body leading-snug font-semibold">
-            {item.kind === 'place' ? item.detail : item.kind === 'trip' ? item.text.replace('added a trip to', 'Trip to') : item.detail || 'New pet photo'}
-          </span>
-          <Byline item={item} light />
-        </span>
-      </NextLink>
-    );
-  }
-
-  // A plan: a calendar page with the date.
-  if (item.kind === 'event' && item.date) {
-    const d = new Date(item.date);
-    return (
-      <NextLink href={item.href} className={`${base} flex items-center gap-3 p-3`}>
-        <span className="flex h-14 w-14 shrink-0 flex-col items-center justify-center overflow-hidden rounded-control bg-surface-2">
-          <span className="w-full bg-danger py-0.5 text-center text-[10px] font-bold text-white uppercase">{d.toLocaleDateString('en-GB', { month: 'short' })}</span>
-          <span className="text-title leading-tight font-bold">{d.getDate()}</span>
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-body font-semibold">{item.detail || 'New plan'}</span>
-          <Byline item={item} />
-        </span>
-      </NextLink>
-    );
-  }
-
-  // New pet: a round portrait.
-  if (item.kind === 'pet_added' || item.kind === 'cat_added') {
-    return (
-      <NextLink href={item.href} className={`${base} flex items-center gap-3 p-3`}>
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-2 text-text-secondary">
-          {item.thumbSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.thumbSrc} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <Paw className="text-[24px]" />
-          )}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-body font-semibold">{item.text.replace('added ', 'Meet ').replace(' to the pets', '')}</span>
-          <Byline item={item} />
-        </span>
-      </NextLink>
-    );
-  }
-
-  // Wishes, watch list, dreams and the rest: picture or icon tile + title.
   const Icon = ICONS[item.kind] ?? Sparkles;
-  const tall = item.kind === 'watch';
+  const date = item.kind === 'event' && item.date ? new Date(item.date) : null;
+  const round = item.kind === 'pet_added' || item.kind === 'cat_added';
+  const kindLabel = {
+    pet_photo: 'Pet photo',
+    cat_photo: 'Pet photo',
+    pet_added: 'New pet',
+    cat_added: 'New pet',
+    gift: 'Wish',
+    watch: 'To watch',
+    dream: 'Dream',
+    event: 'Plan',
+    trip: 'Trip',
+    place: 'Place',
+  }[item.kind];
+  const title = item.kind === 'pet_added' || item.kind === 'cat_added' ? item.text.replace('added ', '').replace(' to the pets', '') : item.detail || item.text;
+
   return (
-    <NextLink href={item.href} className={`${base} flex items-center gap-3 p-3`}>
-      <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-control bg-accent/12 text-primary ${tall ? 'h-[72px] w-12' : 'h-14 w-14'}`}>
+    <NextLink href={item.href} className="flex h-[84px] items-center gap-3 overflow-hidden rounded-card bg-surface px-3">
+      <span className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden ${round ? 'rounded-full' : 'rounded-control'} ${item.thumbSrc || date ? 'bg-surface-2' : ICON_TINT[item.kind] ?? 'bg-surface-2'}`}>
         {item.thumbSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.thumbSrc} alt="" loading="lazy" className="h-full w-full object-cover" />
+        ) : date ? (
+          <span className="flex h-full w-full flex-col items-center">
+            <span className="w-full bg-danger py-0.5 text-center text-[10px] font-bold text-white uppercase">{date.toLocaleDateString('en-GB', { month: 'short' })}</span>
+            <span className="flex flex-1 items-center text-title font-bold">{date.getDate()}</span>
+          </span>
         ) : (
-          <Icon className="text-[22px]" />
+          <Icon className="text-[24px]" />
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-caption font-semibold tracking-wide text-text-secondary uppercase">{item.text}</span>
-        {item.detail && <span className="block text-body leading-snug font-semibold">{item.detail}</span>}
+        <span className="block text-caption font-semibold tracking-wide text-text-secondary uppercase">{kindLabel}</span>
+        <span className="block truncate text-body font-semibold">{title}</span>
         <Byline item={item} />
       </span>
     </NextLink>

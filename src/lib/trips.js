@@ -20,8 +20,11 @@ export const EXPENSE_CATEGORIES = [
   { id: 'other', label: 'Other' },
 ];
 
+// Forints read the Hungarian way ("6 000 Ft") and have no cents in practice.
 export const money = (amount, currency = 'EUR') =>
-  new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: amount % 1 ? 2 : 0 }).format(amount ?? 0);
+  currency === 'HUF'
+    ? new Intl.NumberFormat('hu-HU', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount ?? 0)
+    : new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: amount % 1 ? 2 : 0 }).format(amount ?? 0);
 
 export function tripDates(trip) {
   if (!trip.start) return null;

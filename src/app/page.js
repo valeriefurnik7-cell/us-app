@@ -52,7 +52,7 @@ function Person({ profile, who, now, onPhoto }) {
   const night = hour !== null && (hour < 7 || hour >= 21);
   return (
     <NextLink href={who === 'me' ? '/profile/me' : '/profile/friend'} className="relative z-10 flex flex-1 flex-col items-center text-center">
-      <span className={`rounded-full p-1 ${who === 'me' ? 'bg-me/25' : 'bg-her/25'}`}>
+      <span className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-full ${who === 'me' ? 'bg-me/25' : 'bg-her/25'}`}>
         <Avatar who={who} name={profile?.name ?? '+'} src={profile?.avatar} size="lg" className={`h-[72px]! w-[72px]! ${profile ? '' : 'opacity-50'}`} />
       </span>
       <p className="mt-2 text-body font-bold">{profile?.name ?? 'Waiting…'}</p>
@@ -194,6 +194,7 @@ function Countdown({ meeting, lastMeeting, loading }) {
         <>
           <p className="text-large-title leading-tight font-bold">We meet today!</p>
           <p className="mt-1 text-body">{[meeting.title, meeting.city].filter(Boolean).join(' · ')}</p>
+          <p className="mt-2 text-caption opacity-70">Not a meeting? Open it in Plans and change the type.</p>
         </>
       ) : (
         <>

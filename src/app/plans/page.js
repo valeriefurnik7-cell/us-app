@@ -10,6 +10,7 @@ import Avatar from '@/components/Avatar';
 import { useSession } from '@/components/SessionProvider';
 import EventSheet from '@/components/plans/EventSheet';
 import TripsTab from '@/components/plans/TripsTab';
+import PlacesView from '@/components/places/PlacesView';
 import { FILTERS, EVENT_TYPES, addDays, colorOf, matchesFilter, onDay, sameDay, startOfDay, startOfWeek, useEvents } from '@/lib/events';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -71,7 +72,7 @@ function readSegment() {
   try {
     // ?tab=trips (e.g. from the Trips counter on Home) wins over the remembered tab.
     const fromLink = new URLSearchParams(window.location.search).get('tab');
-    if (fromLink === 'trips' || fromLink === 'calendar') return fromLink;
+    if (['trips', 'calendar', 'places'].includes(fromLink)) return fromLink;
     return sessionStorage.getItem(SEGMENT_KEY) || 'calendar';
   } catch {
     return 'calendar';
@@ -84,6 +85,7 @@ export default function PlansPage() {
   // The app renders after sign-in on the client, so sessionStorage is available here.
   const [segment, setSegmentState] = useState(readSegment);
   const [tripAdding, setTripAdding] = useState(false);
+  const [placeAdding, setPlaceAdding] = useState(false);
   const setSegment = (next) => {
     setSegmentState(next);
     try {
@@ -115,7 +117,7 @@ export default function PlansPage() {
     <Screen>
       <AppNavbar
         title="Plans"
-        onAdd={segment === 'calendar' ? () => setEditing({ event: null }) : () => setTripAdding(true)}
+        onAdd={segment === 'calendar' ? () => setEditing({ event: null }) : segment === 'trips' ? () => setTripAdding(true) : () => setPlaceAdding(true)}
         addIcon={segment === 'calendar' ? CalendarBadgePlus : undefined}
       />
 
@@ -127,10 +129,15 @@ export default function PlansPage() {
           <SegmentedButton strong rounded active={segment === 'trips'} onClick={() => setSegment('trips')}>
             Trips
           </SegmentedButton>
+          <SegmentedButton strong rounded active={segment === 'places'} onClick={() => setSegment('places')}>
+            Places
+          </SegmentedButton>
         </Segmented>
       </div>
 
-      {segment === 'trips' ? (
+      {segment === 'places' ? (
+        <PlacesView adding={placeAdding} onAddClose={() => setPlaceAdding(false)} />
+      ) : segment === 'trips' ? (
         <TripsTab adding={tripAdding} onAddClose={setTripAdding} />
       ) : (
         <>

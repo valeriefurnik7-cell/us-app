@@ -15,7 +15,7 @@ const KIND_TAB = {
   dream: '/wishlist',
   event: '/plans',
   trip: '/plans',
-  place: '/places',
+  place: '/plans',
 };
 
 const KEY = 'lastSeen';
@@ -65,7 +65,7 @@ export function useTabBadges(partnerId, currentTab) {
     if (!currentTab) return;
     const now = new Date().toISOString();
     const next = { ...readSeen() };
-    ['/pets', '/wishlist', '/plans', '/places'].forEach((t) => (next[t] ??= now));
+    ['/pets', '/wishlist', '/plans', '/expenses'].forEach((t) => (next[t] ??= now));
     next[currentTab] = now;
     writeSeen(next);
     Promise.resolve().then(() => setSeen(next));

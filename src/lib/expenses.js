@@ -59,14 +59,44 @@ export function balances(expenses, meId, herId) {
   }));
 }
 
-/** Shares from a split choice. split: 'equal' | 'me' | 'her' | 'custom' (custom = { me, her }). */
-export function sharesFor(amount, split, meId, herId, custom) {
-  const a = Number(amount) || 0;
-  if (split === 'me') return { [meId]: a, [herId]: 0 };
-  if (split === 'her') return { [meId]: 0, [herId]: a };
-  if (split === 'custom') return { [meId]: Number(custom.me) || 0, [herId]: Number(custom.her) || 0 };
-  const half = round(a / 2);
-  return { [meId]: half, [herId]: round(a - half) };
+export const EXPENSE_CURRENCIES = ['EUR', 'HUF'];
+
+/**
+ * Shares from a Tricount-style split.
+ * mode 'equally': included = { [id]: true|false };  'parts': parts = { [id]: n };  'amounts': amounts = { [id]: n }.
+ */
+export function sharesFor(amount, { mode, included, parts, amounts }, people) {
+  const total = Number(amount) || 0;
+  const ids = people.map((p) => p.id);
+  if (mode === 'amounts') return Object.fromEntries(ids.map((id) => [id, round(Number(amounts[id]) || 0)]));
+  const weights = Object.fromEntries(ids.map((id) => [id, mode === 'parts' ? Math.max(0, Number(parts[id]) || 0) : included[id] ? 1 : 0]));
+  const sum = Object.values(weights).reduce((a, b) => a + b, 0) || 1;
+  // Round each share; the last person absorbs the cent so the shares always add up to the total.
+  const shares = {};
+  let given = 0;
+  ids.forEach((id, i) => {
+    shares[id] = i === ids.length - 1 ? round(total - given) : round((total * weights[id]) / sum);
+    given += shares[id];
+  });
+  return shares;
+}
+
+/** Back from stored shares to the split the person most likely chose (for editing). */
+export function splitFromShares(shares, people) {
+  const values = people.map((p) => Number(shares?.[p.id] ?? 0));
+  const included = Object.fromEntries(people.map((p, i) => [p.id, values[i] > 0]));
+  const nonZero = values.filter((v) => v > 0);
+  const base = { included, parts: Object.fromEntries(people.map((p) => [p.id, 1])), amounts: Object.fromEntries(people.map((p, i) => [p.id, String(values[i])])) };
+  if (!nonZero.length || nonZero.every((v) => Math.abs(v - nonZero[0]) <= 0.01)) return { ...base, mode: 'equally' };
+  // Small whole-number ratios read as parts (2 : 1, 3 : 2 …).
+  const min = Math.min(...nonZero);
+  for (let unit = 1; unit <= 4; unit += 1) {
+    const ratios = values.map((v) => (v / min) * unit);
+    if (ratios.every((r) => Math.abs(r - Math.round(r)) < 0.02)) {
+      return { ...base, mode: 'parts', parts: Object.fromEntries(people.map((p, i) => [p.id, Math.round(ratios[i])])) };
+    }
+  }
+  return { ...base, mode: 'amounts' };
 }
 
 export async function saveSharedExpense(expense, { me, pair }) {
