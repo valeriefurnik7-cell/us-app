@@ -10,7 +10,7 @@ const MOTION = { 'nav-forward': 'nav-forward', 'nav-back': 'nav-back', tab: 'tab
  * Scrollable screen. Bottom padding keeps content clear of the floating tabbar and home indicator.
  * Slides in/out like iOS when navigating deeper or back; crossfades between tabs.
  */
-export default function Screen({ children, className = 'pb-[calc(var(--k-safe-area-bottom)+104px)]' }) {
+export default function Screen({ children, className = 'pb-[calc(var(--k-safe-area-bottom)+120px)]' }) {
   return (
     <ViewTransition enter={MOTION} exit={MOTION} default="none">
       <Page className={className}>{children}</Page>

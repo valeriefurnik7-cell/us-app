@@ -8,8 +8,9 @@ import { TABS, tabForPath } from '@/lib/tabs';
 import { useParentSection } from './AppShell';
 
 // iOS 26 floating pill, built from Konsta's own glass tokens.
+// Strong blur + a thinner tint so what scrolls underneath reads as frosted glass.
 const GLASS =
-  'gap-0! p-1 rounded-full backdrop-blur-lg bg-ios-light-glass dark:bg-ios-dark-glass shadow-ios-light-glass dark:shadow-ios-dark-glass';
+  'gap-0! p-1 rounded-full backdrop-blur-[28px] backdrop-saturate-[1.8] bg-white/55 dark:bg-[rgb(40_40_44/0.45)] shadow-ios-light-glass dark:shadow-ios-dark-glass';
 
 // Glass lens that slides under the active tab, with a slight overshoot like iOS.
 // While dragged it grows a little and follows the finger without easing.

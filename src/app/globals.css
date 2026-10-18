@@ -70,15 +70,11 @@
 
 html,
 body {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
   height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ios);
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
 }
 
 @keyframes heart-burst {
@@ -102,7 +98,8 @@ body {
 
 /* The header stays put: no rubber-band drag of the whole page at the top. */
 .k-page {
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Dark map: invert the OpenStreetMap tiles and turn the hues back. */
