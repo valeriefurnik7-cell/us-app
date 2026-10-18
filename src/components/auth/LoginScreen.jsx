@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Block, BlockFooter, Button, List, ListInput, Page } from 'konsta/react';
 import { Paw } from 'framework7-icons/react';
 import { errorMessage, supabase } from '@/lib/supabase';
+import { enableDemo } from '@/lib/demo/mode';
 
 // Email + password: no email delivery needed, and the session lives right in the Home Screen app.
 export default function LoginScreen() {
@@ -71,6 +72,9 @@ export default function LoginScreen() {
           >
             {isSignUp ? 'I already have an account' : 'Create an account'}
           </Button>
+          <button type="button" onClick={enableDemo} className="mt-4 h-11 text-subhead text-text-secondary">
+            Look around with demo data
+          </button>
         </Block>
       </form>
     </Page>

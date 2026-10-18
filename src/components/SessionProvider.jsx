@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { isDemo, supabase } from '@/lib/supabase';
+import { disableDemo } from '@/lib/demo/mode';
 import { signedUrls } from '@/lib/media';
 
 const SessionContext = createContext(null);
@@ -66,6 +67,7 @@ export function SessionProvider({ children }) {
     pair: data?.pair ?? null,
     refresh,
     signOut: async () => {
+      if (isDemo) return disableDemo();
       await supabase.auth.signOut();
       setData(undefined);
     },

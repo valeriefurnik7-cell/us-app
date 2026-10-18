@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from './supabase';
+import { isDemo, supabase } from './supabase';
 
 /**
  * Loads data and reloads it whenever any of `tables` changes in the database,
@@ -24,6 +24,12 @@ export function useLive(load, tables) {
       if (!cancelled) setState({ data, loading: false });
     };
     Promise.resolve().then(run);
+    // Demo data lives in this browser only — there is no other phone to listen to.
+    if (isDemo) {
+      return () => {
+        cancelled = true;
+      };
+    }
 
     // Several rows usually change together (a post and its photos), so reload once they settle.
     const channel = supabase.channel(`live:${tables.join(',')}:${crypto.randomUUID()}`);

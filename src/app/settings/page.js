@@ -8,7 +8,8 @@ import { Field, FieldGroup, TextInput } from '@/components/FormRows';
 import { useTheme } from '@/components/ThemeProvider';
 import { useSession } from '@/components/SessionProvider';
 import { CURRENCIES } from '@/components/wishlist/GiftSheet';
-import { supabase } from '@/lib/supabase';
+import { isDemo, supabase } from '@/lib/supabase';
+import { disableDemo, enableDemo } from '@/lib/demo/mode';
 import { NOTIFICATION_TYPES, currentSubscription, disablePush, enablePush, pushSupport } from '@/lib/push';
 
 const MODES = [
@@ -183,7 +184,25 @@ export default function SettingsPage() {
       <Notifications />
       <Currency />
 
-      <FieldGroup title="Account" footer={session?.user.email}>
+      <FieldGroup
+        title="Demo"
+        footer={
+          isDemo
+            ? 'You’re looking at sample data. Changes stay on this phone; turning demo off brings back your real account.'
+            : 'Fill the app with sample pets, plans, gifts and places to look around. Your real data isn’t touched.'
+        }
+      >
+        <li>
+          <button type="button" onClick={isDemo ? disableDemo : enableDemo} className="flex min-h-12 w-full items-center gap-3 px-4 text-start">
+            <span className="flex-1 text-body">Demo data</span>
+            <span className="pointer-events-none">
+              <Toggle component="span" checked={isDemo} readOnly />
+            </span>
+          </button>
+        </li>
+      </FieldGroup>
+
+      <FieldGroup title="Account" footer={isDemo ? 'Demo account' : session?.user.email}>
         <li>
           <button type="button" onClick={() => setConfirmSignOut(true)} className="h-12 w-full px-4 text-start text-body text-danger">
             Sign out

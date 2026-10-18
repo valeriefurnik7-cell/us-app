@@ -9,6 +9,7 @@ import Avatar from './Avatar';
 import { useParentSection } from './AppShell';
 import { useSession } from './SessionProvider';
 import PairSheet from './PairSheet';
+import { isDemo } from '@/lib/supabase';
 
 // 36px visuals keep the glass pill compact; the invisible ::after grows the tap area to 44×44.
 const hit = "relative flex h-9 min-w-9 items-center justify-center after:absolute after:-inset-1 after:content-['']";
@@ -43,6 +44,7 @@ export function AppNavbar({ title, onAdd, addIcon, titleAccessory, subnavbar }) 
             <Paw className="text-[16px]" />
           </span>
           <span className="text-subhead font-semibold">{pair?.name}</span>
+          {isDemo && <span className="rounded-full bg-together/20 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-together uppercase">Demo</span>}
         </button>
       }
       right={

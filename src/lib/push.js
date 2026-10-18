@@ -1,6 +1,6 @@
 'use client';
 
-import { supabase } from './supabase';
+import { isDemo, supabase } from './supabase';
 
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
@@ -39,6 +39,7 @@ export async function currentSubscription() {
  * Returns null when it worked, otherwise a sentence explaining what went wrong.
  */
 export async function enablePush(me) {
+  if (isDemo) return 'Notifications are off in demo mode.';
   let step = 'permission';
   try {
     const permission = await Notification.requestPermission();
@@ -75,6 +76,7 @@ export async function disablePush() {
 
 /** Tell the partner about something I just did. Fire and forget — never blocks the UI. */
 export function notify(kind, details = {}) {
+  if (isDemo) return;
   supabase.auth.getSession().then(({ data }) => {
     const token = data.session?.access_token;
     if (!token) return;

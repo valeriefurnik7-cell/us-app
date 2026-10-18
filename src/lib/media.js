@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { isDemo, supabase } from './supabase';
 
 const BUCKET = 'media';
 const MAX_SIDE = 2048;
@@ -23,6 +23,8 @@ export const mediaType = (file) => (file.type.startsWith('video/') ? 'video' : '
 export async function uploadMedia(file, pairId, folder) {
   const type = mediaType(file);
   const body = type === 'photo' ? await compressImage(file) : file;
+  // Demo mode: keep the picture in this browser session only.
+  if (isDemo) return URL.createObjectURL(body);
   const ext = type === 'photo' ? 'jpg' : (file.name.split('.').pop() || 'mp4').toLowerCase();
   const path = `${pairId}/${folder}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
@@ -32,14 +34,19 @@ export async function uploadMedia(file, pairId, folder) {
   return path;
 }
 
+// Full URLs (demo pictures, shop images, posters) are shown as they are.
+export const isDirectUrl = (path) => /^(https?:|blob:)/.test(path);
+
 export async function removeMedia(paths) {
-  if (paths.length) await supabase.storage.from(BUCKET).remove(paths);
+  const stored = paths.filter((p) => p && !isDirectUrl(p));
+  if (stored.length) await supabase.storage.from(BUCKET).remove(stored);
 }
 
 // The bucket is private, so files are shown through short-lived signed URLs, cached per session.
 const urlCache = new Map();
 
 export async function signedUrls(paths) {
+  paths.filter((p) => p && isDirectUrl(p)).forEach((p) => urlCache.set(p, p));
   const missing = [...new Set(paths.filter((p) => p && !urlCache.has(p)))];
   if (missing.length) {
     const { data } = await supabase.storage.from(BUCKET).createSignedUrls(missing, URL_TTL);
