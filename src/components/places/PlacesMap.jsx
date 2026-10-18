@@ -2,19 +2,14 @@
 
 import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { useTheme } from '../ThemeProvider';
 import { useSession } from '../SessionProvider';
 
-// CARTO basemaps: free with attribution, with a dark variant that matches the app.
-const TILES = {
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-};
-const ATTRIBUTION = '&copy; OpenStreetMap &copy; CARTO';
+// OpenStreetMap tiles (free, attribution required). In the dark theme they're inverted with CSS (globals.css).
+const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const ATTRIBUTION = '&copy; OpenStreetMap';
 
 /** Pins colored by who added the place; tap a pin to open it. */
 export default function PlacesMap({ places, onOpen }) {
-  const { resolved } = useTheme();
   const { me } = useSession();
   const container = useRef(null);
   const map = useRef(null);
@@ -26,10 +21,8 @@ export default function PlacesMap({ places, onOpen }) {
       if (cancelled || !container.current) return;
       if (!map.current) {
         map.current = L.map(container.current, { zoomControl: false, attributionControl: true });
-        layers.current.L = L;
       }
-      if (layers.current.tiles) layers.current.tiles.remove();
-      layers.current.tiles = L.tileLayer(TILES[resolved], { attribution: ATTRIBUTION, subdomains: 'abcd', maxZoom: 19 }).addTo(map.current);
+      if (!layers.current.tiles) layers.current.tiles = L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(map.current);
 
       if (layers.current.pins) layers.current.pins.remove();
       const pins = L.layerGroup().addTo(map.current);
@@ -51,12 +44,13 @@ export default function PlacesMap({ places, onOpen }) {
     return () => {
       cancelled = true;
     };
-  }, [places, resolved, me.id, onOpen]);
+  }, [places, me.id, onOpen]);
 
   useEffect(
     () => () => {
       map.current?.remove();
       map.current = null;
+      layers.current = {};
     },
     []
   );

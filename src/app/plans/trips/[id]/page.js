@@ -171,7 +171,7 @@ function Budget({ trip, reload }) {
       <FieldGroup footer={mine?.visible_to_partner ? `${partner?.name ?? 'She'} can see your budget and spending.` : 'Only you see your budget.'}>
         <Field label="Budget">
           <TextInput type="number" inputMode="decimal" value={amount} placeholder="0" onChange={(e) => setAmount(e.target.value)} onBlur={() => save({})} />
-          <select value={currency} onChange={(e) => save({ currency: e.target.value })} className="bg-transparent text-body text-text-secondary outline-none">
+          <select value={currency} onChange={(e) => save({ currency: e.target.value })} className="w-16 shrink-0 bg-transparent text-end text-body text-text-secondary outline-none">
             {CURRENCIES.map((c) => (
               <option key={c}>{c}</option>
             ))}

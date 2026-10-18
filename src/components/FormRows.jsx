@@ -27,7 +27,7 @@ export function TextInput(props) {
   return (
     <input
       {...props}
-      className="h-12 min-w-0 flex-1 bg-transparent text-end text-body text-text-secondary outline-none placeholder:text-text-secondary/50 focus:text-text"
+      className="h-12 w-0 min-w-0 flex-1 bg-transparent text-end text-body text-text-secondary outline-none placeholder:text-text-secondary/50 focus:text-text"
     />
   );
 }

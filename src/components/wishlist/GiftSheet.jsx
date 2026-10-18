@@ -121,7 +121,7 @@ function GiftForm({ gift, onClose }) {
           </Field>
           <Field label="Price">
             <TextInput type="number" inputMode="decimal" value={form.price} placeholder="Optional" onChange={set('price')} />
-            <select value={form.currency} onChange={set('currency')} className="bg-transparent text-body text-text-secondary outline-none">
+            <select value={form.currency} onChange={set('currency')} className="w-16 shrink-0 bg-transparent text-end text-body text-text-secondary outline-none">
               {CURRENCIES.map((c) => (
                 <option key={c}>{c}</option>
               ))}

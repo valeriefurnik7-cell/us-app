@@ -104,3 +104,12 @@ body {
 .k-page {
   overscroll-behavior-y: none;
 }
+
+/* Dark map: invert the OpenStreetMap tiles and turn the hues back. */
+.dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
+.leaflet-container {
+  background: var(--surface-2);
+  font-family: var(--font-ios);
+}
