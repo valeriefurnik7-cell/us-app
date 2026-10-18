@@ -5,32 +5,26 @@ import { Block, BlockFooter, Button, List, ListInput, Page } from 'konsta/react'
 import { Paw } from 'framework7-icons/react';
 import { errorMessage, supabase } from '@/lib/supabase';
 
-// Email + 6-digit code instead of a magic link: on iOS the link opens in Safari,
-// which does not share the session with the app installed on the Home Screen.
+// Email + password: no email delivery needed, and the session lives right in the Home Screen app.
 export default function LoginScreen() {
+  const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const isSignUp = mode === 'signup';
 
-  async function sendCode(e) {
+  async function submit(e) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim() });
+    const credentials = { email: email.trim(), password };
+    const { data, error } = isSignUp
+      ? await supabase.auth.signUp(credentials)
+      : await supabase.auth.signInWithPassword(credentials);
     setBusy(false);
     if (error) setError(errorMessage(error));
-    else setSent(true);
-  }
-
-  async function verify(e) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'email' });
-    setBusy(false);
-    if (error) setError(errorMessage(error));
+    else if (isSignUp && !data.session) setError('Turn off “Confirm email” in Supabase, then sign in.');
   }
 
   return (
@@ -40,42 +34,43 @@ export default function LoginScreen() {
           <Paw className="text-[34px]" />
         </span>
         <h1 className="text-large-title font-bold">Us</h1>
-        <p className="text-subhead text-text-secondary">{sent ? `We sent a code to ${email}` : 'Sign in with your email'}</p>
+        <p className="text-subhead text-text-secondary">{isSignUp ? 'Create your account' : 'Sign in to continue'}</p>
       </div>
 
-      <form onSubmit={sent ? verify : sendCode}>
+      <form onSubmit={submit}>
         <List strong inset>
-          {sent ? (
-            <ListInput
-              key="code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="6-digit code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          ) : (
-            <ListInput
-              key="email"
-              type="email"
-              autoComplete="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          )}
+          <ListInput
+            type="email"
+            autoComplete="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <ListInput
+            type="password"
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
+            placeholder={isSignUp ? 'Password, at least 6 characters' : 'Password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </List>
         {error && <BlockFooter className="text-danger!">{error}</BlockFooter>}
         <Block className="flex flex-col gap-2">
-          <Button large rounded type="submit" disabled={busy || (sent ? code.trim().length < 6 : !email.includes('@'))}>
-            {sent ? 'Sign in' : 'Get code'}
+          <Button large rounded type="submit" disabled={busy || !email.includes('@') || password.length < 6}>
+            {isSignUp ? 'Create account' : 'Sign in'}
           </Button>
-          {sent && (
-            <Button large rounded clear type="button" onClick={() => { setSent(false); setCode(''); setError(null); }}>
-              Use another email
-            </Button>
-          )}
+          <Button
+            large
+            rounded
+            clear
+            type="button"
+            onClick={() => {
+              setMode(isSignUp ? 'signin' : 'signup');
+              setError(null);
+            }}
+          >
+            {isSignUp ? 'I already have an account' : 'Create an account'}
+          </Button>
         </Block>
       </form>
     </Page>
