@@ -123,7 +123,8 @@ export default function AppTabbar() {
     <Tabbar
       labels
       icons
-      className="app-bottom-bar fixed bottom-0 left-0 touch-pan-y"
+      // Sits lower than Konsta's default (safe area + 16px), closer to the home indicator like iOS 26.
+      className="app-bottom-bar fixed bottom-0 left-0 touch-pan-y pb-[max(8px,calc(var(--k-safe-area-bottom)-6px))]!"
       data-hidden={onTabRoot ? undefined : ''}
       style={{ viewTransitionName: 'tabbar' }}
       innerClassName={GLASS}

@@ -259,7 +259,7 @@ export default function ExpensesPage() {
       <button
         type="button"
         onClick={() => setEditing({ expense: null })}
-        className="app-bottom-bar fixed inset-x-0 bottom-[calc(var(--k-safe-area-bottom)+104px)] z-20 mx-auto flex h-12 w-56 items-center justify-center gap-2 rounded-full bg-accent text-body font-semibold text-white shadow-lg"
+        className="app-bottom-bar fixed inset-x-0 bottom-[calc(var(--k-safe-area-bottom)+84px)] z-20 mx-auto flex h-12 w-56 items-center justify-center gap-2 rounded-full bg-accent text-body font-semibold text-white shadow-lg"
       >
         <Plus className="text-[18px]" />
         Add expense

@@ -6,7 +6,7 @@ import { useLive } from './useLive';
 import { dayKey, streak } from './dates';
 import { notify } from './push';
 
-export const REACTIONS = ['❤️', '😂', '🥹'];
+export const REACTIONS = ['❤️', '😂', '🥹', '😍', '🔥', '👍', '😮', '😢', '🐾', '🎉'];
 
 export const SPECIES = [
   { id: 'cat', label: 'Cat' },

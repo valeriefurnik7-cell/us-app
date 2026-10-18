@@ -10,7 +10,6 @@ import { useSession } from '@/components/SessionProvider';
 import MessageBubble from '@/components/pets/MessageBubble';
 import MediaViewer from '@/components/pets/MediaViewer';
 import UploadSheet, { useMediaPicker } from '@/components/pets/UploadSheet';
-import PetSheet from '@/components/pets/PetSheet';
 import CommentsSheet from '@/components/pets/CommentsSheet';
 import { REACTIONS, createPost, deleteMediaItem, deletePost, pairStreak, toggleReaction, usePets, useFeed } from '@/lib/pets';
 import { dayKey } from '@/lib/dates';
@@ -30,13 +29,17 @@ function dayLabel(iso) {
   return new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-/** Pinned under the header so the pets stay in reach while chatting. */
-function PetsRow({ pets, loading, onAdd }) {
+/** Pinned under the header so the pets stay in reach while chatting. Pets are added in the profile. */
+function PetsRow({ pets, loading }) {
   return (
     <div className="no-scrollbar -mx-4 flex w-[calc(100%+2rem)] items-center gap-2 overflow-x-auto px-4">
       {loading
         ? [0, 1, 2].map((i) => <div key={i} className="h-10 w-24 shrink-0 animate-pulse rounded-full bg-surface-2" />)
-        : pets.map((pet) => (
+        : !pets.length ? (
+            <NextLink href="/profile/me" className="flex h-10 items-center rounded-full bg-surface px-4 text-subhead text-primary">
+              Add your pets in your profile
+            </NextLink>
+          ) : pets.map((pet) => (
             <NextLink
               key={pet.id}
               href={`/pets/${pet.id}`}
@@ -53,18 +56,6 @@ function PetsRow({ pets, loading, onAdd }) {
               <span className="text-subhead font-semibold">{pet.name}</span>
             </NextLink>
           ))}
-      {!loading && (
-        <button
-          type="button"
-          onClick={onAdd}
-          className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-ios-light-glass py-1 ps-1 pe-3.5 text-subhead font-semibold text-primary shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass"
-        >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white">
-            <Plus className="text-[16px]" />
-          </span>
-          Add pet
-        </button>
-      )}
     </div>
   );
 }
@@ -126,7 +117,6 @@ export default function PetsPage() {
   const pets = usePets();
   const feed = useFeed();
   const [uploadFiles, setUploadFiles] = useState(null);
-  const [addingPet, setAddingPet] = useState(false);
   const [viewer, setViewer] = useState(null); // { items, index }
   const [menuPost, setMenuPost] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -165,7 +155,7 @@ export default function PetsPage() {
             )}
           </span>
         }
-        subnavbar={<PetsRow pets={petList} loading={pets.loading} onAdd={() => setAddingPet(true)} />}
+        subnavbar={<PetsRow pets={petList} loading={pets.loading} />}
       />
       {picker.element}
 
@@ -218,7 +208,6 @@ export default function PetsPage() {
           feed.reload();
         }}
       />
-      <PetSheet opened={addingPet} pet={null} onClose={() => setAddingPet(false)} onSaved={pets.reload} />
       <MediaViewer
         opened={Boolean(viewer)}
         items={viewer?.items ?? []}
@@ -234,7 +223,7 @@ export default function PetsPage() {
       {/* Long press: react or delete */}
       <Actions opened={Boolean(menuPost)} onBackdropClick={() => setMenuPost(null)}>
         <ActionsGroup>
-          <div className="flex justify-center gap-3 py-3">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-3 py-3">
             {REACTIONS.map((emoji) => {
               const active = menuPost?.reactions.some((r) => r.emoji === emoji && r.author_id === me.id);
               return (
@@ -247,7 +236,7 @@ export default function PetsPage() {
                     await toggleReaction(post, emoji, me);
                     feed.reload();
                   }}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full text-[26px] ${active ? 'bg-accent/20' : 'bg-surface-2'}`}
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[26px] ${active ? 'bg-accent/20' : 'bg-surface-2'}`}
                 >
                   {emoji}
                 </button>

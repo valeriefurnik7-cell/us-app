@@ -169,17 +169,18 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
           )}
         </div>
         <ReactionPill reactions={post.reactions} mine={mine} />
-        {post.commentCount > 0 && (
+        {/* Comment right there, like under an Instagram post — no long press needed */}
+        <span className={`mt-1 flex items-center gap-2 px-1 ${mine ? 'flex-row-reverse' : ''}`}>
+          <span className="text-[11px] text-text-secondary">{timeOf(post.createdAt)}</span>
           <button
             type="button"
             onClick={() => onComments(post)}
-            className="mt-1 flex h-7 items-center gap-1 px-1 text-caption font-semibold text-text-secondary"
+            className="flex h-8 items-center gap-1 rounded-full bg-surface px-2.5 text-caption font-semibold text-text-secondary"
           >
             <ChatBubble className="text-[13px]" />
-            {post.commentCount === 1 ? 'View 1 comment' : `View ${post.commentCount} comments`}
+            {post.commentCount === 0 ? 'Comment' : post.commentCount === 1 ? '1 comment' : `${post.commentCount} comments`}
           </button>
-        )}
-        <span className="mt-0.5 px-1 text-[11px] text-text-secondary">{timeOf(post.createdAt)}</span>
+        </span>
       </div>
     </div>
   );
