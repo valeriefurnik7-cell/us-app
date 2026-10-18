@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import NextLink from '@/components/AppLink';
-import { Actions, ActionsButton, ActionsGroup, ActionsLabel } from 'konsta/react';
 import {
   CalendarBadgePlus,
   ChevronRight,
@@ -22,7 +21,9 @@ import { AppNavbar } from '@/components/AppNavbar';
 import Avatar from '@/components/Avatar';
 import InviteCard from '@/components/InviteCard';
 import { useSession } from '@/components/SessionProvider';
-import { useTheme } from '@/components/ThemeProvider';
+import AppearanceSheet from '@/components/AppearanceSheet';
+import { parseTheme } from '@/lib/appearance';
+import { signedUrls } from '@/lib/media';
 import { describeActivity, localTime, timeDifference, useHome, useNow, useWeather, weatherKind } from '@/lib/home';
 import { timeAgo } from '@/lib/dates';
 import { startOfDay } from '@/lib/events';
@@ -64,57 +65,56 @@ function Person({ profile, who, now }) {
   );
 }
 
+function useCardPhoto(path) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!path) return;
+    signedUrls([path]).then((urls) => !cancelled && setUrl(urls[path] ?? null));
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+  return path ? url : null;
+}
+
 function UsCard() {
   const { me, partner, pair } = useSession();
-  const { mode, setMode } = useTheme();
   const now = useNow();
-  const [themeMenu, setThemeMenu] = useState(false);
+  const [lookOpen, setLookOpen] = useState(false);
+  const photo = useCardPhoto(parseTheme(pair).cardPhoto);
   const diff = partner && timeDifference(now, me.timezone, partner.timezone, partner.name);
 
   return (
-    <section className="relative mx-4 mt-2 rounded-card bg-surface px-3 pt-4 pb-4">
-      <button
-        type="button"
-        aria-label="Theme"
-        onClick={() => setThemeMenu(true)}
-        className="absolute end-2 top-2 flex h-11 w-11 items-center justify-center text-text-secondary"
-      >
-        <PaintbrushFill className="text-[18px]" />
-      </button>
-      <NextLink href="/settings" className="block text-center text-caption font-semibold tracking-wide text-text-secondary uppercase">
-        {pair?.name}
-      </NextLink>
-      <div className="mt-3 flex">
-        <Person profile={me} who="me" now={now} />
-        <Person profile={partner} who="her" now={now} />
+    <section className={`relative mx-4 mt-2 overflow-hidden rounded-card px-3 pt-4 pb-4 ${photo ? 'text-white' : 'bg-surface'}`}>
+      {photo && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          {/* Scrim keeps names and clocks readable on any photo */}
+          <span className="absolute inset-0 bg-black/45" />
+        </>
+      )}
+      <div className={`relative ${photo ? '[&_.text-text-secondary]:text-white/80 [&_.text-primary]:text-white' : ''}`}>
+        <button
+          type="button"
+          aria-label="Our look"
+          onClick={() => setLookOpen(true)}
+          className={`absolute -end-1 -top-2 flex h-11 w-11 items-center justify-center ${photo ? 'text-white' : 'text-text-secondary'}`}
+        >
+          <PaintbrushFill className="text-[18px]" />
+        </button>
+        <NextLink href="/settings" className="block text-center text-caption font-semibold tracking-wide text-text-secondary uppercase">
+          {pair?.name}
+        </NextLink>
+        <div className="mt-3 flex">
+          <Person profile={me} who="me" now={now} />
+          <Person profile={partner} who="her" now={now} />
+        </div>
+        {diff && <p className="mt-3 text-center text-subhead font-semibold text-primary">{diff}</p>}
       </div>
-      {diff && <p className="mt-3 text-center text-subhead text-primary">{diff}</p>}
 
-      <Actions opened={themeMenu} onBackdropClick={() => setThemeMenu(false)}>
-        <ActionsGroup>
-          <ActionsLabel>Theme</ActionsLabel>
-          {[
-            ['dark', 'Dark'],
-            ['light', 'Light'],
-            ['system', 'Like my phone'],
-          ].map(([id, label]) => (
-            <ActionsButton
-              key={id}
-              bold={mode === id}
-              onClick={() => {
-                setMode(id);
-                setThemeMenu(false);
-              }}
-            >
-              {label}
-              {mode === id ? ' ✓' : ''}
-            </ActionsButton>
-          ))}
-        </ActionsGroup>
-        <ActionsGroup>
-          <ActionsButton onClick={() => setThemeMenu(false)}>Cancel</ActionsButton>
-        </ActionsGroup>
-      </Actions>
+      <AppearanceSheet opened={lookOpen} onClose={() => setLookOpen(false)} />
     </section>
   );
 }

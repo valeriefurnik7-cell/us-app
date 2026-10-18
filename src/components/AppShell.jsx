@@ -6,6 +6,7 @@ import { App, Block, Page, Preloader } from 'konsta/react';
 import { ThemeProvider } from './ThemeProvider';
 import { SessionProvider, useSession } from './SessionProvider';
 import AppTabbar from './AppTabbar';
+import { AccentFromPair } from './AppearanceSheet';
 import LoginScreen from './auth/LoginScreen';
 import OnboardingScreen from './auth/OnboardingScreen';
 import { TABS, tabForPath } from '@/lib/tabs';
@@ -33,6 +34,7 @@ function Gate({ children }) {
   if (status === 'no-pair') return <OnboardingScreen />;
   return (
     <>
+      <AccentFromPair />
       {children}
       <AppTabbar />
     </>

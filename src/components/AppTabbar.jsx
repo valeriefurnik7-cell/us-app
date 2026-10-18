@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Tabbar, TabbarLink } from 'konsta/react';
 import { TABS, tabForPath } from '@/lib/tabs';
 import { useParentSection } from './AppShell';
+import { useSession } from './SessionProvider';
+import { useTabBadges } from '@/lib/badges';
 
 // iOS 26 floating pill, built from Konsta's own glass tokens.
 // Strong blur + a thinner tint so what scrolls underneath reads as frosted glass.
@@ -37,6 +39,8 @@ export default function AppTabbar() {
   const suppressNextClick = useRef(false);
   const [hoverIndex, setHoverIndex] = useState(null);
   const shownIndex = hoverIndex ?? activeIndex;
+  const { partner } = useSession();
+  const badges = useTabBadges(partner?.id, highlighted?.href);
 
   useLayoutEffect(() => {
     const indicator = indicatorRef.current;
@@ -152,13 +156,17 @@ export default function AppTabbar() {
               }
             }}
             icon={
-              tab.accent ? (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white">
-                  <Icon className="text-[22px]" />
-                </span>
-              ) : (
-                <Icon className="text-[26px]" />
-              )
+              <span className="relative flex items-center justify-center">
+                {tab.accent ? (
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white">
+                    <Icon className="text-[22px]" />
+                  </span>
+                ) : (
+                  <Icon className="text-[26px]" />
+                )}
+                {/* Something new from her since I last opened this tab */}
+                {badges[tab.href] && <span className="absolute -end-1 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-danger" />}
+              </span>
             }
           />
         );

@@ -8,6 +8,8 @@ import { Field, FieldGroup, TextInput } from '@/components/FormRows';
 import { useTheme } from '@/components/ThemeProvider';
 import { useSession } from '@/components/SessionProvider';
 import { CURRENCIES } from '@/components/wishlist/GiftSheet';
+import { AccentSwatches } from '@/components/AppearanceSheet';
+import { applyAccent, parseTheme, saveTheme } from '@/lib/appearance';
 import { isDemo, supabase } from '@/lib/supabase';
 import { disableDemo, enableDemo } from '@/lib/demo/mode';
 import { NOTIFICATION_TYPES, currentSubscription, disablePush, enablePush, pushSupport } from '@/lib/push';
@@ -135,6 +137,24 @@ function Notifications() {
   );
 }
 
+function Accent() {
+  const { pair, refresh } = useSession();
+  return (
+    <FieldGroup title="Accent color" footer="Shared: changes the color for both of you.">
+      <li className="px-4 py-3">
+        <AccentSwatches
+          value={parseTheme(pair).accent}
+          onChange={async (accent) => {
+            applyAccent(accent);
+            await saveTheme(pair, { accent });
+            await refresh();
+          }}
+        />
+      </li>
+    </FieldGroup>
+  );
+}
+
 function Currency() {
   const { me, refresh } = useSession();
   return (
@@ -180,6 +200,8 @@ export default function SettingsPage() {
           </li>
         ))}
       </FieldGroup>
+
+      <Accent />
 
       <Notifications />
       <Currency />
