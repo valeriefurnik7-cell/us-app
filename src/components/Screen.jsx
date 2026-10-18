@@ -3,10 +3,8 @@
 import { Page } from 'konsta/react';
 
 /** Scrollable screen. Bottom padding keeps content clear of the floating tabbar and home indicator. */
-export default function Screen({ children }) {
-  return (
-    <Page className="pb-[calc(var(--k-safe-area-bottom)+104px)]">{children}</Page>
-  );
+export default function Screen({ children, className = 'pb-[calc(var(--k-safe-area-bottom)+104px)]' }) {
+  return <Page className={className}>{children}</Page>;
 }
 
 export function EmptyState({ title, text }) {

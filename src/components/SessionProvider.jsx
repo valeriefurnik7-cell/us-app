@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { signedUrls } from '@/lib/media';
 
 const SessionContext = createContext(null);
 export const useSession = () => useContext(SessionContext);
@@ -25,8 +26,10 @@ export function SessionProvider({ children }) {
 
   const refresh = useCallback(async () => {
     if (!userId) return;
-    const { data: profiles } = await supabase.from('profiles').select('*');
-    const me = profiles?.find((p) => p.id === userId) ?? null;
+    const { data: rows } = await supabase.from('profiles').select('*');
+    const urls = await signedUrls((rows ?? []).map((p) => p.avatar_url));
+    const profiles = (rows ?? []).map((p) => ({ ...p, avatar: urls[p.avatar_url] ?? null }));
+    const me = profiles.find((p) => p.id === userId) ?? null;
     if (!me) {
       setData({ me: null, partner: null, pair: null });
       return;

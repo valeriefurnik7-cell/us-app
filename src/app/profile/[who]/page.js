@@ -65,7 +65,7 @@ export default function ProfilePage({ params }) {
       <InnerNavbar title={isMe ? 'My profile' : profile.name} />
 
       <div className="mt-2 flex flex-col items-center gap-2">
-        <Avatar who={isMe ? 'me' : 'her'} name={profile.name} size="lg" />
+        <Avatar who={isMe ? 'me' : 'her'} name={profile.name} src={profile.avatar} size="lg" />
         <p className="text-title font-semibold">{profile.name}</p>
       </div>
 

@@ -7,10 +7,16 @@ import { dayKey, streak } from './dates';
 
 export const REACTIONS = ['❤️', '😂', '🥹'];
 
+export const SPECIES = [
+  { id: 'cat', label: 'Cat' },
+  { id: 'dog', label: 'Dog' },
+  { id: 'other', label: 'Other' },
+];
+
 const CAT_TABLES = ['cats'];
 const FEED_TABLES = ['cat_posts', 'cat_post_media', 'reactions', 'comments'];
 
-async function loadCats() {
+async function loadPets() {
   const { data } = await supabase.from('cats').select('*').order('created_at');
   const cats = data ?? [];
   const urls = await signedUrls(cats.map((c) => c.cover_url));
@@ -27,7 +33,8 @@ async function loadFeed() {
     .limit(200);
   const posts = data ?? [];
   const urls = await signedUrls(posts.flatMap((p) => p.cat_post_media.map((m) => m.url)));
-  return posts.map((p) => ({
+  // Oldest first, like a chat
+  return posts.reverse().map((p) => ({
     id: p.id,
     authorId: p.author_id,
     caption: p.caption,
@@ -39,14 +46,14 @@ async function loadFeed() {
   }));
 }
 
-export const useCats = () => useLive(loadCats, CAT_TABLES);
+export const usePets = () => useLive(loadPets, CAT_TABLES);
 export const useFeed = () => useLive(loadFeed, FEED_TABLES);
 
-/** Days in a row when both of you posted a cat. */
+/** Days in a row when both of you sent a pet photo ("pet of the day"). */
 export function pairStreak(posts, me, partner) {
   if (!me || !partner) return 0;
   const byDay = new Map();
-  posts.forEach((p) => {
+  posts.filter((p) => p.media.length).forEach((p) => {
     const key = dayKey(p.createdAt);
     if (!byDay.has(key)) byDay.set(key, new Set());
     byDay.get(key).add(p.authorId);
@@ -55,10 +62,11 @@ export function pairStreak(posts, me, partner) {
   return streak(both);
 }
 
-/** Days in a row with at least one photo of this cat. */
-export const catStreak = (posts) => streak(new Set(posts.map((p) => dayKey(p.createdAt))));
+/** Days in a row with at least one photo of this pet. */
+export const petStreak = (posts) => streak(new Set(posts.filter((p) => p.media.length).map((p) => dayKey(p.createdAt))));
 
-export async function createPost({ files, catIds, caption, me, pair, onProgress }) {
+/** A chat message: text, photos/videos, or both. */
+export async function createPost({ files = [], catIds = [], caption = '', me, pair, onProgress }) {
   const { data: post, error } = await supabase
     .from('cat_posts')
     .insert({ pair_id: pair.id, author_id: me.id, caption: caption.trim() || null })
@@ -66,23 +74,27 @@ export async function createPost({ files, catIds, caption, me, pair, onProgress 
     .single();
   if (error) throw error;
 
-  const rows = [];
-  try {
-    for (const [i, file] of files.entries()) {
-      const url = await uploadMedia(file, pair.id, `posts/${post.id}`);
-      rows.push({ post_id: post.id, url, type: mediaType(file), order: i });
-      onProgress?.((i + 1) / files.length);
+  if (files.length) {
+    const rows = [];
+    try {
+      for (const [i, file] of files.entries()) {
+        const url = await uploadMedia(file, pair.id, `posts/${post.id}`);
+        rows.push({ post_id: post.id, url, type: mediaType(file), order: i });
+        onProgress?.((i + 1) / files.length);
+      }
+      const { error: mediaError } = await supabase.from('cat_post_media').insert(rows);
+      if (mediaError) throw mediaError;
+    } catch (e) {
+      // Don't leave an empty message behind
+      await removeMedia(rows.map((r) => r.url));
+      await supabase.from('cat_posts').delete().eq('id', post.id);
+      throw e;
     }
-    const { error: mediaError } = await supabase.from('cat_post_media').insert(rows);
-    if (mediaError) throw mediaError;
-  } catch (e) {
-    // Don't leave an empty post behind
-    await removeMedia(rows.map((r) => r.url));
-    await supabase.from('cat_posts').delete().eq('id', post.id);
-    throw e;
   }
   if (catIds.length) await supabase.from('cat_post_cats').insert(catIds.map((cat_id) => ({ post_id: post.id, cat_id })));
-  await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'cat_photo', target_id: post.id });
+  if (files.length) {
+    await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'pet_photo', target_id: post.id });
+  }
   return post;
 }
 

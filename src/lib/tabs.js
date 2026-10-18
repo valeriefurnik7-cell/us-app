@@ -12,7 +12,7 @@ import {
 export const TABS = [
   { href: '/', label: 'Home', icon: House, iconActive: HouseFill },
   { href: '/wishlist', label: 'Wishlist', icon: Star, iconActive: StarFill },
-  { href: '/cats', label: 'Cats', icon: Paw, iconActive: Paw, accent: true },
+  { href: '/pets', label: 'Pets', icon: Paw, iconActive: Paw, accent: true },
   { href: '/plans', label: 'Plans', icon: Calendar, iconActive: Calendar },
   { href: '/places', label: 'Places', icon: Placemark, iconActive: PlacemarkFill },
 ];

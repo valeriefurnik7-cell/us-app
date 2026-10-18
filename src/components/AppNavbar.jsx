@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import NextLink from 'next/link';
 import { Navbar, NavbarBackLink } from 'konsta/react';
 import { GearAlt, Paw, Plus } from 'framework7-icons/react';
@@ -7,20 +8,24 @@ import { useRouter } from 'next/navigation';
 import Avatar from './Avatar';
 import { useParentSection } from './AppShell';
 import { useSession } from './SessionProvider';
+import PairSheet from './PairSheet';
 
-// 44×44 hit area around smaller visuals
-const hit = 'flex h-11 min-w-11 items-center justify-center';
+// 36px visuals keep the glass pill compact; the invisible ::after grows the tap area to 44×44.
+const hit = "relative flex h-9 min-w-9 items-center justify-center after:absolute after:-inset-1 after:content-['']";
 
 /**
  * Tab-root header: logo + pair name, avatars, settings; iOS large title that collapses on scroll.
  * onAdd shows the accent "+" button; titleAccessory sits next to the large title (e.g. a streak).
  */
-export function AppNavbar({ title, onAdd, titleAccessory }) {
+export function AppNavbar({ title, onAdd, addIcon: AddIcon = Plus, titleAccessory, subnavbar }) {
   const { me, partner, pair } = useSession();
+  const [pairOpen, setPairOpen] = useState(false);
   return (
+    <>
     <Navbar
       large
       centerTitle
+      subnavbar={subnavbar}
       title={
         titleAccessory ? (
           <span className="inline-flex items-center gap-2">
@@ -32,34 +37,36 @@ export function AppNavbar({ title, onAdd, titleAccessory }) {
         )
       }
       left={
-        <span className="flex items-center gap-2 ps-1 pe-3">
+        <button type="button" onClick={() => setPairOpen(true)} className={`${hit} gap-2 ps-0.5 pe-3`}>
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-white">
             <Paw className="text-[16px]" />
           </span>
           <span className="text-subhead font-semibold">{pair?.name}</span>
-        </span>
+        </button>
       }
       right={
-        <span className="flex items-center">
+        <span className="flex items-center gap-1 px-0.5">
           {onAdd && (
             <button type="button" onClick={onAdd} aria-label="Add" className={hit}>
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white">
-                <Plus className="text-[18px]" />
+                <AddIcon className="text-[18px]" />
               </span>
             </button>
           )}
           <NextLink href="/profile/me" aria-label="My profile" className={hit}>
-            <Avatar who="me" name={me?.name} />
+            <Avatar who="me" name={me?.name} src={me?.avatar} />
           </NextLink>
           <NextLink href="/profile/friend" aria-label="Friend's profile" className={`${hit} -ms-2`}>
-            <Avatar who="her" name={partner?.name ?? '+'} className={partner ? '' : 'opacity-50'} />
+            <Avatar who="her" name={partner?.name ?? '+'} src={partner?.avatar} className={partner ? '' : 'opacity-50'} />
           </NextLink>
           <NextLink href="/settings" aria-label="Settings" className={`${hit} text-primary`}>
-            <GearAlt className="text-[24px]" />
+            <GearAlt className="text-[22px]" />
           </NextLink>
         </span>
       }
     />
+    <PairSheet opened={pairOpen} onClose={() => setPairOpen(false)} />
+    </>
   );
 }
 

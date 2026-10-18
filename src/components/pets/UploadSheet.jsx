@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BlockFooter, BlockTitle, Chip, Link, List, ListInput, Progressbar, Sheet, Toolbar } from 'konsta/react';
 import { Camera, PlayFill } from 'framework7-icons/react';
 import { useSession } from '../SessionProvider';
-import { createPost } from '@/lib/cats';
+import { createPost } from '@/lib/pets';
 import { errorMessage } from '@/lib/supabase';
 
 const MAX_VIDEO_MB = 50;
@@ -78,7 +78,7 @@ function UploadForm({ initialFiles, cats, defaultCatId, onClose }) {
           Cancel
         </Link>
         <Link toolbar onClick={post} className={busy || !files.length ? 'pointer-events-none opacity-40' : ''}>
-          <b>Post</b>
+          <b>Send</b>
         </Link>
       </Toolbar>
       {busy && <Progressbar progress={progress} />}

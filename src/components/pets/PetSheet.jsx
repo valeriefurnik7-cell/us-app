@@ -1,11 +1,12 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { BlockFooter, BlockTitle, Link, List, ListInput, Sheet, Toolbar } from 'konsta/react';
+import { BlockFooter, BlockTitle, Link, List, ListInput, Segmented, SegmentedButton, Sheet, Toolbar } from 'konsta/react';
 import { Camera } from 'framework7-icons/react';
 import { useSession } from '../SessionProvider';
 import { supabase, errorMessage } from '@/lib/supabase';
 import { removeMedia, uploadMedia } from '@/lib/media';
+import { SPECIES } from '@/lib/pets';
 
 const FAVORITES = [
   { key: 'food', label: 'Favorite food', short: 'Food' },
@@ -13,11 +14,12 @@ const FAVORITES = [
   { key: 'sleep', label: 'Favorite sleeping spot', short: 'Sleeps on' },
 ];
 
-function CatForm({ cat, onClose, onSaved }) {
+function PetForm({ pet: cat, onClose, onSaved }) {
   const { me, pair } = useSession();
   const input = useRef(null);
   const [form, setForm] = useState({
     name: cat?.name ?? '',
+    species: cat?.species ?? 'cat',
     breed: cat?.breed ?? '',
     birthday: cat?.birthday ?? '',
     character: cat?.character ?? '',
@@ -42,6 +44,7 @@ function CatForm({ cat, onClose, onSaved }) {
       const coverUrl = cover ? await uploadMedia(cover, pair.id, 'cats') : cat?.cover_url ?? null;
       const row = {
         name: form.name.trim(),
+        species: form.species,
         breed: form.breed.trim() || null,
         birthday: form.birthday || null,
         character: form.character.trim() || null,
@@ -53,7 +56,7 @@ function CatForm({ cat, onClose, onSaved }) {
         : await supabase.from('cats').insert({ ...row, pair_id: pair.id, owner_id: me.id }).select().single();
       if (error) throw error;
       if (cover && cat?.cover_url) await removeMedia([cat.cover_url]);
-      if (!cat) await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'cat_added', target_id: data.id });
+      if (!cat) await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'pet_added', target_id: data.id });
       await onSaved?.();
       onClose();
     } catch (e) {
@@ -91,9 +94,19 @@ function CatForm({ cat, onClose, onSaved }) {
         </button>
         <p className="mt-2 text-center text-subhead text-primary">{preview ? 'Change photo' : 'Add photo'}</p>
 
+        <div className="mx-4 mt-5">
+          <Segmented strong rounded>
+            {SPECIES.map((s) => (
+              <SegmentedButton key={s.id} strong rounded active={form.species === s.id} onClick={() => setForm({ ...form, species: s.id })}>
+                {s.label}
+              </SegmentedButton>
+            ))}
+          </Segmented>
+        </div>
+
         <BlockTitle>About</BlockTitle>
         <List strong inset>
-          <ListInput label="Name" placeholder="Max" value={form.name} onChange={set('name')} />
+          <ListInput label="Name" placeholder={form.species === 'dog' ? 'Bobby' : 'Max'} value={form.name} onChange={set('name')} />
           <ListInput label="Breed" placeholder="Optional" value={form.breed} onChange={set('breed')} />
           <ListInput label="Birthday" type="date" value={form.birthday} onChange={set('birthday')} />
           <ListInput label="Character in two words" placeholder="Lazy, cuddly" value={form.character} onChange={set('character')} />
@@ -117,11 +130,11 @@ function CatForm({ cat, onClose, onSaved }) {
   );
 }
 
-/** Add a new cat (cat = null) or edit an existing one. */
-export default function CatSheet({ opened, cat, onClose, onSaved }) {
+/** Add a new pet (pet = null) or edit an existing one. */
+export default function PetSheet({ opened, pet, onClose, onSaved }) {
   return (
     <Sheet opened={opened} onBackdropClick={onClose} className="w-full">
-      {opened && <CatForm cat={cat} onClose={onClose} onSaved={onSaved} />}
+      {opened && <PetForm pet={pet} onClose={onClose} onSaved={onSaved} />}
     </Sheet>
   );
 }

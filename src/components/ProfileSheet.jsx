@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { BlockFooter, BlockTitle, Link, List, ListInput, Sheet, Toolbar } from 'konsta/react';
+import { useRef, useState } from 'react';
+import { Actions, ActionsButton, ActionsGroup, Link, Navbar, Page, Popup } from 'konsta/react';
+import Avatar from './Avatar';
 import CitySearch from './CitySearch';
+import { Field, FieldGroup, TextInput } from './FormRows';
 import { useSession } from './SessionProvider';
 import { errorMessage, supabase } from '@/lib/supabase';
+import { removeMedia, uploadMedia } from '@/lib/media';
 import { ADDRESS_FIELDS } from '@/lib/address';
+
+const field = (key) => ADDRESS_FIELDS.find((f) => f.key === key);
+const RECIPIENT = ['recipient', 'phone'].map(field);
+const ADDRESS = ['street', 'apartment', 'city', 'zip', 'country'].map(field);
 
 function initialForm(me, address) {
   return {
@@ -16,93 +23,162 @@ function initialForm(me, address) {
   };
 }
 
-function ProfileForm({ me, address, onClose, onSaved }) {
-  const { refresh } = useSession();
+function ProfileForm({ me, partner, address, onClose, onSaved }) {
+  const { pair, refresh } = useSession();
+  const photoInput = useRef(null);
   const [form, setForm] = useState(() => initialForm(me, address));
+  const [photo, setPhoto] = useState(undefined); // undefined = unchanged, null = removed, File = new
+  const [preview, setPreview] = useState(me.avatar);
+  const [photoMenu, setPhotoMenu] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
   const setAddress = (key, value) => setForm((f) => ({ ...f, address: { ...f.address, [key]: value } }));
 
+  function pickPhoto(e) {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setPhoto(file);
+    setPreview(URL.createObjectURL(file));
+  }
+
   async function save() {
     setBusy(true);
     setError(null);
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ name: form.name.trim(), birthday: form.birthday || null, ...form.place })
-      .eq('id', me.id);
-    const addressRow = Object.fromEntries(
-      Object.entries(form.address).map(([k, v]) => [k, v.trim() || null])
-    );
-    const { error: addressError } = await supabase
-      .from('addresses')
-      .upsert({ profile_id: me.id, ...addressRow, updated_at: new Date().toISOString() });
-    setBusy(false);
-    const err = profileError || addressError;
-    if (err) {
-      setError(errorMessage(err));
-      return;
+    try {
+      let avatarUrl = me.avatar_url;
+      if (photo !== undefined) {
+        avatarUrl = photo ? await uploadMedia(photo, pair.id, 'avatars') : null;
+        if (me.avatar_url) await removeMedia([me.avatar_url]);
+      }
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ name: form.name.trim(), birthday: form.birthday || null, avatar_url: avatarUrl, ...form.place })
+        .eq('id', me.id);
+      if (profileError) throw profileError;
+      const addressRow = Object.fromEntries(Object.entries(form.address).map(([k, v]) => [k, v.trim() || null]));
+      const { error: addressError } = await supabase
+        .from('addresses')
+        .upsert({ profile_id: me.id, ...addressRow, updated_at: new Date().toISOString() });
+      if (addressError) throw addressError;
+      await refresh();
+      await onSaved();
+      onClose();
+    } catch (e) {
+      setError(errorMessage(e));
+      setBusy(false);
     }
-    await refresh();
-    await onSaved();
-    onClose();
   }
 
   return (
-    <>
-      <Toolbar top innerClassName="w-full! items-center! justify-between">
-        <div className="left">
-          <Link toolbar onClick={onClose}>
-            Cancel
+    <Page className="pb-safe-8">
+      <Navbar
+        title="Edit profile"
+        left={<Link onClick={onClose}>Cancel</Link>}
+        right={
+          <Link onClick={save} className={busy || !form.name.trim() ? 'pointer-events-none opacity-40' : ''}>
+            <b>{busy ? 'Saving…' : 'Done'}</b>
           </Link>
-        </div>
-        <div className="right">
-          <Link toolbar onClick={save} className={busy || !form.name.trim() ? 'pointer-events-none opacity-40' : ''}>
-            <b>Save</b>
-          </Link>
-        </div>
-      </Toolbar>
+        }
+      />
 
-      <div className="max-h-[75vh] overflow-auto pb-safe-4">
-        <BlockTitle>Profile</BlockTitle>
-        <List strong inset>
-          <ListInput label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <CitySearch value={form.place} onChange={(place) => setForm((f) => ({ ...f, place }))} />
-          <ListInput
-            label="Birthday"
-            type="date"
-            value={form.birthday}
-            onChange={(e) => setForm({ ...form, birthday: e.target.value })}
+      <input ref={photoInput} type="file" accept="image/*" hidden onChange={pickPhoto} />
+      <div className="flex flex-col items-center pt-4">
+        <button type="button" onClick={() => setPhotoMenu(true)} aria-label="Edit photo">
+          <Avatar who="me" name={form.name || me.name} src={preview} size="lg" />
+        </button>
+        <button type="button" onClick={() => setPhotoMenu(true)} className="mt-2 h-11 px-4 text-subhead text-primary">
+          {preview ? 'Edit photo' : 'Add photo'}
+        </button>
+      </div>
+
+      <FieldGroup title="About you">
+        <Field label="Name">
+          <TextInput
+            value={form.name}
+            placeholder="Required"
+            autoComplete="given-name"
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
-        </List>
+        </Field>
+        <Field label="Birthday">
+          <TextInput type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
+        </Field>
+      </FieldGroup>
 
-        <BlockTitle>Delivery address</BlockTitle>
-        <List strong inset>
-          {ADDRESS_FIELDS.map((f) => (
-            <ListInput
-              key={f.key}
-              label={f.label}
+      <FieldGroup
+        title="Where you are"
+        footer={form.place.timezone ? `Time zone: ${form.place.timezone}` : 'Used for your local time and weather on Home.'}
+      >
+        <CitySearch value={form.place} onChange={(place) => setForm((f) => ({ ...f, place }))} />
+      </FieldGroup>
+
+      <FieldGroup title="Delivery address · recipient">
+        {RECIPIENT.map((f) => (
+          <Field key={f.key} label={f.label}>
+            <TextInput
               type={f.type ?? 'text'}
               autoComplete={f.autoComplete}
               value={form.address[f.key]}
               onChange={(e) => setAddress(f.key, e.target.value)}
             />
-          ))}
-        </List>
-        <BlockFooter>Only your friend can see your address.</BlockFooter>
-        {error && <BlockFooter className="text-danger!">{error}</BlockFooter>}
-      </div>
-    </>
+          </Field>
+        ))}
+      </FieldGroup>
+
+      <FieldGroup
+        title="Delivery address · where"
+        footer={`Only ${partner?.name ?? 'your friend'} can see your address — to send you gifts.`}
+      >
+        {ADDRESS.map((f) => (
+          <Field key={f.key} label={f.label}>
+            <TextInput autoComplete={f.autoComplete} value={form.address[f.key]} onChange={(e) => setAddress(f.key, e.target.value)} />
+          </Field>
+        ))}
+      </FieldGroup>
+
+      {error && <p className="mx-8 mt-4 text-subhead text-danger">{error}</p>}
+
+      <Actions opened={photoMenu} onBackdropClick={() => setPhotoMenu(false)}>
+        <ActionsGroup>
+          <ActionsButton
+            onClick={() => {
+              setPhotoMenu(false);
+              photoInput.current?.click();
+            }}
+          >
+            Choose photo
+          </ActionsButton>
+          {preview && (
+            <ActionsButton
+              className="text-danger!"
+              onClick={() => {
+                setPhoto(null);
+                setPreview(null);
+                setPhotoMenu(false);
+              }}
+            >
+              Remove photo
+            </ActionsButton>
+          )}
+        </ActionsGroup>
+        <ActionsGroup>
+          <ActionsButton bold onClick={() => setPhotoMenu(false)}>
+            Cancel
+          </ActionsButton>
+        </ActionsGroup>
+      </Actions>
+    </Page>
   );
 }
 
-/** Edit my profile and address in a bottom sheet. */
+/** Full-screen editor for my profile, photo and address. */
 export default function ProfileSheet({ opened, address, onClose, onSaved }) {
-  const { me } = useSession();
+  const { me, partner } = useSession();
   return (
-    <Sheet opened={opened} onBackdropClick={onClose} className="w-full">
-      {/* Remount on open so the form starts from the latest saved values */}
-      {opened && me && <ProfileForm me={me} address={address} onClose={onClose} onSaved={onSaved} />}
-    </Sheet>
+    <Popup opened={opened} onBackdropClick={onClose}>
+      {opened && me && <ProfileForm me={me} partner={partner} address={address} onClose={onClose} onSaved={onSaved} />}
+    </Popup>
   );
 }

@@ -6,10 +6,10 @@ import { Paw, PlayFill } from 'framework7-icons/react';
 import Screen, { EmptyState } from '@/components/Screen';
 import { InnerNavbar } from '@/components/AppNavbar';
 import { useSession } from '@/components/SessionProvider';
-import CatSheet, { FAVORITES } from '@/components/cats/CatSheet';
-import MediaViewer from '@/components/cats/MediaViewer';
-import UploadSheet, { useMediaPicker } from '@/components/cats/UploadSheet';
-import { catStreak, useCats, useFeed } from '@/lib/cats';
+import PetSheet, { FAVORITES } from '@/components/pets/PetSheet';
+import MediaViewer from '@/components/pets/MediaViewer';
+import UploadSheet, { useMediaPicker } from '@/components/pets/UploadSheet';
+import { SPECIES, petStreak, usePets, useFeed } from '@/lib/pets';
 import { ageFrom } from '@/lib/dates';
 
 function Stat({ value, label }) {
@@ -21,10 +21,10 @@ function Stat({ value, label }) {
   );
 }
 
-export default function CatPage({ params }) {
+export default function PetPage({ params }) {
   const { id } = use(params);
   const { me, partner } = useSession();
-  const cats = useCats();
+  const cats = usePets();
   const feed = useFeed();
   const [editing, setEditing] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(null);
@@ -47,8 +47,8 @@ export default function CatPage({ params }) {
   if (!cat) {
     return (
       <Screen>
-        <InnerNavbar title="Cat" />
-        <EmptyState title="This cat is gone" />
+        <InnerNavbar title="Pet" />
+        <EmptyState title="This pet is gone" />
       </Screen>
     );
   }
@@ -73,6 +73,7 @@ export default function CatPage({ params }) {
 
       <List strong inset>
         <ListItem title="Whose" after={isMine ? 'Mine' : partner?.name ?? 'Hers'} />
+        <ListItem title="Species" after={SPECIES.find((s) => s.id === cat.species)?.label ?? 'Cat'} />
         {cat.breed && <ListItem title="Breed" after={cat.breed} />}
         {age && <ListItem title="Age" after={age} />}
         {cat.character && <ListItem title="Character" after={cat.character} />}
@@ -91,7 +92,7 @@ export default function CatPage({ params }) {
 
       <div className="mx-4 mt-6 flex gap-3">
         <Stat value={photoCount} label="photos all time" />
-        <Stat value={catStreak(posts)} label="days in a row" />
+        <Stat value={petStreak(posts)} label="days in a row" />
       </div>
 
       <Block className="flex gap-2">
@@ -132,7 +133,7 @@ export default function CatPage({ params }) {
         </div>
       )}
 
-      <CatSheet opened={editing} cat={cat} onClose={() => setEditing(false)} onSaved={cats.reload} />
+      <PetSheet opened={editing} pet={cat} onClose={() => setEditing(false)} onSaved={cats.reload} />
       <UploadSheet
         files={uploadFiles}
         cats={cats.data}

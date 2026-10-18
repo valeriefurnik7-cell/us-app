@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { List, ListInput, ListItem } from 'konsta/react';
+import { Field, TextInput } from './FormRows';
 
 // Open-Meteo geocoding: free, no key; returns coordinates and the IANA timezone.
 async function searchCities(query, signal) {
@@ -20,7 +20,7 @@ async function searchCities(query, signal) {
   }));
 }
 
-/** value: { city, lat, lon, timezone } */
+/** City row with suggestions underneath. value: { city, lat, lon, timezone } */
 export default function CitySearch({ value, onChange }) {
   const [query, setQuery] = useState(value.city ?? '');
   const [results, setResults] = useState([]);
@@ -42,29 +42,26 @@ export default function CitySearch({ value, onChange }) {
 
   return (
     <>
-      <ListInput
-        label="City"
-        placeholder="Start typing a city"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        info={picked && value.timezone ? value.timezone : 'Used for local time and weather'}
-      />
-      {!picked && query.trim().length >= 2 && results.length > 0 && (
-        <List nested>
-          {results.map((r) => (
-            <ListItem
-              key={r.key}
-              link
-              title={r.label}
+      <Field label="City">
+        <TextInput placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
+      </Field>
+      {!picked &&
+        query.trim().length >= 2 &&
+        results.map((r) => (
+          <li key={r.key}>
+            <button
+              type="button"
+              className="flex min-h-12 w-full items-center border-b border-text-secondary/20 ps-8 pe-4 text-start text-body text-primary"
               onClick={() => {
                 setQuery(r.city);
                 setResults([]);
                 onChange({ city: r.city, lat: r.lat, lon: r.lon, timezone: r.timezone });
               }}
-            />
-          ))}
-        </List>
-      )}
+            >
+              {r.label}
+            </button>
+          </li>
+        ))}
     </>
   );
 }
