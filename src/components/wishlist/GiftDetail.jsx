@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Button, Link, Sheet, Toast, Toolbar } from 'konsta/react';
-import { ArrowUpRightSquare, Checkmark, DocOnDoc, Gift } from 'framework7-icons/react';
+import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Button, Sheet, Toast } from 'konsta/react';
+import { ArrowUpRightSquare, Checkmark, DocOnDoc, Gift, LockFill, Pencil, Xmark } from 'framework7-icons/react';
+import Avatar from '../Avatar';
 import { useSession } from '../SessionProvider';
 import { GIFT_STATUSES, deleteGift, reserveGift, unreserveGift, updateReservation } from '@/lib/wishlist';
 import { formatAddress } from '@/lib/address';
@@ -82,45 +83,67 @@ function Detail({ gift, onClose, onEdit }) {
 
   return (
     <>
-      <Toolbar top innerClassName="w-full! items-center! justify-between">
-        {mine ? (
-          <Link toolbar onClick={() => onEdit(gift)}>
-            Edit
-          </Link>
-        ) : (
-          <span />
-        )}
-        <Link toolbar onClick={() => onClose(false)}>
-          <b>Done</b>
-        </Link>
-      </Toolbar>
-      <div className="max-h-[80vh] overflow-auto pb-safe-8">
-        <div className="mx-4 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-card bg-surface-2">
+      <div className="max-h-[88vh] overflow-auto pb-safe-8">
+        {/* Full-width photo on top, like an Ohmywishes wish */}
+        <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-t-[inherit] bg-surface-2">
           {gift.image_urlSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={gift.image_urlSrc} alt="" className="h-full w-full object-contain" />
+            <img src={gift.image_urlSrc} alt="" className="h-full w-full object-cover" />
           ) : (
-            <Gift className="text-[48px] text-text-secondary" />
+            <Gift className="text-[64px] text-text-secondary" />
+          )}
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => onClose(false)}
+            className="absolute end-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md"
+          >
+            <Xmark className="text-[16px]" />
+          </button>
+          {mine && (
+            <button
+              type="button"
+              onClick={() => onEdit(gift)}
+              className="absolute start-3 top-3 flex h-10 items-center gap-1.5 rounded-full bg-black/45 px-3.5 text-subhead font-semibold text-white backdrop-blur-md"
+            >
+              <Pencil className="text-[14px]" />
+              Edit
+            </button>
           )}
         </div>
-        <div className="px-4 pt-4">
-          <p className="text-title font-bold">{gift.title}</p>
-          {price && <p className="mt-0.5 text-body text-text-secondary">{price}</p>}
-          {gift.note && <p className="mt-2 text-body">{gift.note}</p>}
-          <p className="mt-2 text-caption text-text-secondary">{mine ? 'Your wish' : `${partner?.name ?? 'Her'} wishes`}</p>
-        </div>
 
-        {gift.url && (
-          <a
-            href={gift.url}
-            target="_blank"
-            rel="noreferrer"
-            className="mx-4 mt-4 flex h-12 items-center justify-center gap-2 rounded-card bg-surface text-body text-primary"
-          >
-            <ArrowUpRightSquare className="text-[20px]" />
-            Open in shop
-          </a>
-        )}
+        <div className="px-4 pt-4">
+          <div className="flex items-center gap-2 text-subhead text-text-secondary">
+            <Avatar who={mine ? 'me' : 'her'} name={(mine ? me : partner)?.name} src={(mine ? me : partner)?.avatar} className="h-6! w-6! text-[11px]!" />
+            {mine ? 'Your wish' : partner?.name}
+            {gift.list && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-caption">{gift.list}</span>}
+            {mine && gift.is_secret && (
+              <span className="flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-caption">
+                <LockFill className="text-[10px]" />
+                Secret
+              </span>
+            )}
+          </div>
+          <p className="mt-2 text-title leading-tight font-bold">{gift.title}</p>
+          {gift.note && <p className="mt-2 text-body text-text-secondary">{gift.note}</p>}
+
+          {(price || gift.url) && (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <span className="text-title font-bold">{price}</span>
+              {gift.url && (
+                <a
+                  href={gift.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-4 text-subhead font-semibold"
+                >
+                  <ArrowUpRightSquare className="text-[16px]" />
+                  Where to buy
+                </a>
+              )}
+            </div>
+          )}
+        </div>
 
         {!mine &&
           (gift.reservation ? (
@@ -131,24 +154,23 @@ function Detail({ gift, onClose, onEdit }) {
               </button>
             </>
           ) : (
-            <div className="mx-4 mt-4">
-              <Button
-                large
-                rounded
+            <div className="mx-4 mt-6">
+              <button
+                type="button"
                 onClick={async () => {
                   await reserveGift(gift, me);
                   onClose(true, true);
                 }}
+                className="flex h-14 w-full flex-col items-center justify-center rounded-full bg-text text-bg"
               >
-                <Gift className="me-2 text-[20px]" />
-                I’m giving this
-              </Button>
-              <p className="mt-2 text-center text-caption text-text-secondary">{partner?.name ?? 'She'} won’t see it.</p>
+                <span className="text-body font-semibold">I’m giving this</span>
+                <span className="text-[11px] opacity-60">{partner?.name ?? 'She'} won’t know</span>
+              </button>
             </div>
           ))}
 
         {mine && (
-          <button type="button" onClick={() => setConfirm('delete')} className="mx-4 mt-6 h-12 w-[calc(100%-2rem)] rounded-card bg-surface text-body text-danger">
+          <button type="button" onClick={() => setConfirm('delete')} className="mx-4 mt-6 h-12 w-[calc(100%-2rem)] rounded-full bg-surface text-body text-danger">
             Delete wish
           </button>
         )}

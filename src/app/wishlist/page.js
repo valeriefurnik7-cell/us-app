@@ -10,7 +10,8 @@ import GiftDetail from '@/components/wishlist/GiftDetail';
 import WatchTab from '@/components/wishlist/WatchTab';
 import { WatchAddSheet, WatchDetailSheet } from '@/components/wishlist/WatchSheets';
 import DreamsTab from '@/components/wishlist/DreamsTab';
-import { WATCH_STATUSES, deleteWatchItem, updateWatchItem, useDreams, useGifts, useWatch } from '@/lib/wishlist';
+import { WATCH_STATUSES, deleteGift, deleteWatchItem, updateWatchItem, useDreams, useGifts, useWatch } from '@/lib/wishlist';
+import { useSession } from '@/components/SessionProvider';
 
 const SEGMENTS = [
   { id: 'gifts', label: 'Gifts' },
@@ -26,7 +27,12 @@ export default function WishlistPage() {
 
   // Open records are kept by id so they refresh when the data reloads.
   const [giftId, setGiftId] = useState(null);
-  const [giftEdit, setGiftEdit] = useState(null); // { gift } | null
+  const [giftEdit, setGiftEdit] = useState(null); // { gift, list } | null
+  const [giftMenu, setGiftMenu] = useState(null);
+  const [giftDelete, setGiftDelete] = useState(null);
+  const { me } = useSession();
+  // Lists I already use, offered when adding a wish.
+  const myLists = [...new Set((gifts.data ?? []).filter((g) => g.wisher_id === me.id && g.list).map((g) => g.list))].sort();
   const [watchId, setWatchId] = useState(null);
   const [watchAdd, setWatchAdd] = useState(false);
   const [watchMenu, setWatchMenu] = useState(null);
@@ -57,7 +63,13 @@ export default function WishlistPage() {
       </div>
 
       {segment === 'gifts' && (
-        <GiftsTab gifts={gifts.data ?? []} loading={gifts.loading} onOpen={(g) => setGiftId(g.id)} onAdd={() => setGiftEdit({ gift: null })} />
+        <GiftsTab
+          gifts={gifts.data ?? []}
+          loading={gifts.loading}
+          onOpen={(g) => setGiftId(g.id)}
+          onAdd={(list) => setGiftEdit({ gift: null, list })}
+          onMenu={setGiftMenu}
+        />
       )}
       {segment === 'watch' && (
         <WatchTab
@@ -75,6 +87,8 @@ export default function WishlistPage() {
       <GiftSheet
         opened={Boolean(giftEdit)}
         gift={giftEdit?.gift ?? null}
+        lists={myLists}
+        defaultList={giftEdit?.list}
         onClose={(changed) => {
           setGiftEdit(null);
           if (changed) gifts.reload();
@@ -106,6 +120,55 @@ export default function WishlistPage() {
           if (changed) watch.reload();
         }}
       />
+
+      <Actions opened={Boolean(giftMenu)} onBackdropClick={() => setGiftMenu(null)}>
+        <ActionsGroup>
+          <ActionsLabel>{giftMenu?.title}</ActionsLabel>
+          <ActionsButton
+            onClick={() => {
+              setGiftEdit({ gift: giftMenu });
+              setGiftMenu(null);
+            }}
+          >
+            Edit
+          </ActionsButton>
+          <ActionsButton
+            className="text-danger!"
+            onClick={() => {
+              setGiftDelete(giftMenu);
+              setGiftMenu(null);
+            }}
+          >
+            Delete
+          </ActionsButton>
+        </ActionsGroup>
+        <ActionsGroup>
+          <ActionsButton bold onClick={() => setGiftMenu(null)}>
+            Cancel
+          </ActionsButton>
+        </ActionsGroup>
+      </Actions>
+
+      <Actions opened={Boolean(giftDelete)} onBackdropClick={() => setGiftDelete(null)}>
+        <ActionsGroup>
+          <ActionsLabel>Delete “{giftDelete?.title}”?</ActionsLabel>
+          <ActionsButton
+            className="text-danger!"
+            onClick={async () => {
+              await deleteGift(giftDelete);
+              setGiftDelete(null);
+              gifts.reload();
+            }}
+          >
+            Delete
+          </ActionsButton>
+        </ActionsGroup>
+        <ActionsGroup>
+          <ActionsButton bold onClick={() => setGiftDelete(null)}>
+            Cancel
+          </ActionsButton>
+        </ActionsGroup>
+      </Actions>
 
       <Actions opened={Boolean(watchMenu)} onBackdropClick={() => setWatchMenu(null)}>
         <ActionsGroup>

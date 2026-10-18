@@ -83,7 +83,7 @@ export function buildDemoDb() {
     thermal: id('9'),
     lx: id('9'),
   };
-  const gifts = { scarf: id('7'), kallax: id('7'), film: id('7'), airpods: id('7'), book: id('7'), candle: id('7'), plant: id('7') };
+  const gifts = { scarf: id('7'), kallax: id('7'), film: id('7'), airpods: id('7'), book: id('7'), candle: id('7'), plant: id('7'), ring: id('7') };
   const watch = { severance: id('8'), dune2: id('8'), bear: id('8'), fleabag: id('8'), dune: id('8') };
 
   return {
@@ -143,13 +143,14 @@ export function buildDemoDb() {
     ],
 
     gifts: [
-      { id: gifts.kallax, pair_id: PAIR, wisher_id: DEMO_ME, title: 'KALLAX shelf, white', url: 'https://www.ikea.com/', image_url: 'https://www.ikea.com/gb/en/images/products/kallax-shelving-unit-white__0644757_pe702939_s5.jpg', price: 79, currency: 'EUR', note: '77×147, for the hallway', created_at: hoursAgo(100) },
-      { id: gifts.film, pair_id: PAIR, wisher_id: DEMO_ME, title: 'Kodak Portra 400, 3-pack', url: null, image_url: null, price: 42, currency: 'EUR', note: '35mm', created_at: hoursAgo(120) },
-      { id: gifts.candle, pair_id: PAIR, wisher_id: DEMO_ME, title: 'Fig candle', url: null, image_url: null, price: 28, currency: 'EUR', note: null, created_at: hoursAgo(140) },
-      { id: gifts.scarf, pair_id: PAIR, wisher_id: DEMO_HER, title: 'Linen scarf', url: null, image_url: null, price: 35, currency: 'EUR', note: 'Sage green', created_at: hoursAgo(7) },
-      { id: gifts.airpods, pair_id: PAIR, wisher_id: DEMO_HER, title: 'AirPods Pro', url: 'https://www.apple.com/airpods-pro/', image_url: null, price: 249, currency: 'EUR', note: null, created_at: hoursAgo(300) },
-      { id: gifts.book, pair_id: PAIR, wisher_id: DEMO_HER, title: 'Tomorrow, and Tomorrow, and Tomorrow', url: null, image_url: null, price: 18, currency: 'EUR', note: 'Paperback', created_at: hoursAgo(400) },
-      { id: gifts.plant, pair_id: PAIR, wisher_id: DEMO_HER, title: 'Monstera in a terracotta pot', url: null, image_url: null, price: 45, currency: 'EUR', note: null, created_at: hoursAgo(900) },
+      { id: gifts.kallax, pair_id: PAIR, wisher_id: DEMO_ME, list: 'Home', is_secret: false, title: 'KALLAX shelf, white', url: 'https://www.ikea.com/', image_url: 'https://www.ikea.com/gb/en/images/products/kallax-shelving-unit-white__0644757_pe702939_s5.jpg', price: 79, currency: 'EUR', note: '77×147, for the hallway', created_at: hoursAgo(100) },
+      { id: gifts.film, pair_id: PAIR, wisher_id: DEMO_ME, list: 'Birthday', is_secret: false, title: 'Kodak Portra 400, 3-pack', url: null, image_url: null, price: 42, currency: 'EUR', note: '35mm', created_at: hoursAgo(120) },
+      { id: gifts.candle, pair_id: PAIR, wisher_id: DEMO_ME, list: 'Home', is_secret: false, title: 'Fig candle', url: null, image_url: null, price: 28, currency: 'EUR', note: null, created_at: hoursAgo(140) },
+      { id: gifts.ring, pair_id: PAIR, wisher_id: DEMO_ME, list: null, is_secret: true, title: 'Silver ring with a moonstone', url: null, image_url: null, price: 120, currency: 'EUR', note: 'Just a reminder for myself', created_at: hoursAgo(60) },
+      { id: gifts.scarf, pair_id: PAIR, wisher_id: DEMO_HER, list: null, is_secret: false, title: 'Linen scarf', url: null, image_url: null, price: 35, currency: 'EUR', note: 'Sage green', created_at: hoursAgo(7) },
+      { id: gifts.airpods, pair_id: PAIR, wisher_id: DEMO_HER, list: 'Birthday', is_secret: false, title: 'AirPods Pro', url: 'https://www.apple.com/airpods-pro/', image_url: null, price: 249, currency: 'EUR', note: null, created_at: hoursAgo(300) },
+      { id: gifts.book, pair_id: PAIR, wisher_id: DEMO_HER, list: 'Birthday', is_secret: false, title: 'Tomorrow, and Tomorrow, and Tomorrow', url: null, image_url: null, price: 18, currency: 'EUR', note: 'Paperback', created_at: hoursAgo(400) },
+      { id: gifts.plant, pair_id: PAIR, wisher_id: DEMO_HER, list: null, is_secret: false, title: 'Monstera in a terracotta pot', url: null, image_url: null, price: 45, currency: 'EUR', note: null, created_at: hoursAgo(900) },
     ],
     gift_reservations: [
       { gift_id: gifts.airpods, giver_id: DEMO_ME, status: 'ordered', tracking: 'PT123456789', given_at: null, created_at: hoursAgo(50) },

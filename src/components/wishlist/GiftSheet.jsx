@@ -1,9 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Link, Preloader, Sheet, Toolbar } from 'konsta/react';
-import { Camera, Gift } from 'framework7-icons/react';
-import { Field, FieldGroup, TextInput } from '../FormRows';
+import { Link, Preloader, Sheet, Toggle, Toolbar } from 'konsta/react';
+import { CameraFill, DocOnClipboard, Gift, Link as LinkIcon, LockFill, PencilCircle, Plus } from 'framework7-icons/react';
 import { useSession } from '../SessionProvider';
 import { saveGift } from '@/lib/wishlist';
 import { apiGet } from '@/lib/api';
@@ -11,41 +10,108 @@ import { errorMessage } from '@/lib/supabase';
 
 export const CURRENCIES = ['EUR', 'USD', 'GBP', 'PLN', 'CZK', 'HUF', 'CHF', 'RUB'];
 
-function GiftForm({ gift, onClose }) {
-  const { me, pair } = useSession();
+const looksLikeLink = (text) => /^https?:\/\/\S+$/i.test(text.trim());
+
+/** Step 1, like Ohmywishes: paste a link and let the card fill itself — or start from scratch. */
+function LinkStep({ onFilled, onManual, onCancel }) {
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function fill(link) {
+    if (!looksLikeLink(link)) return;
+    setLoading(true);
+    setError(null);
+    const info = await apiGet(`/api/link-preview?url=${encodeURIComponent(link.trim())}`);
+    setLoading(false);
+    // Even when the shop blocks us, keep the link and let her finish the card by hand.
+    onFilled({ url: link.trim(), title: info?.title ?? '', price: info?.price ?? '', currency: info?.currency, image: info?.image ?? null });
+  }
+
+  async function paste() {
+    try {
+      const text = await navigator.clipboard.readText();
+      setUrl(text);
+      if (looksLikeLink(text)) await fill(text);
+      else setError('There’s no link in the clipboard.');
+    } catch {
+      setError('Couldn’t read the clipboard — paste the link into the field.');
+    }
+  }
+
+  return (
+    <>
+      <Toolbar top innerClassName="w-full! items-center! justify-between">
+        <span className="ps-2 text-body font-semibold">New wish</span>
+        <Link toolbar onClick={onCancel}>
+          Cancel
+        </Link>
+      </Toolbar>
+      <div className="px-4 pt-2 pb-safe-8">
+        <p className="text-title font-bold">Paste a link to the thing</p>
+        <p className="mt-1 text-subhead text-text-secondary">Photo, name and price fill in by themselves.</p>
+
+        <label className="mt-4 flex h-14 items-center gap-2 rounded-card bg-surface-2 px-4">
+          <LinkIcon className="shrink-0 text-[18px] text-text-secondary" />
+          <input
+            type="url"
+            inputMode="url"
+            value={url}
+            placeholder="https://"
+            onChange={(e) => setUrl(e.target.value)}
+            onPaste={(e) => fill(e.clipboardData.getData('text'))}
+            onKeyDown={(e) => e.key === 'Enter' && fill(url)}
+            className="h-full min-w-0 flex-1 bg-transparent text-body outline-none"
+          />
+          {loading && <Preloader className="h-5! w-5!" />}
+        </label>
+
+        <button
+          type="button"
+          onClick={looksLikeLink(url) ? () => fill(url) : paste}
+          disabled={loading}
+          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent text-body font-semibold text-white disabled:opacity-50"
+        >
+          <DocOnClipboard className="text-[18px]" />
+          {looksLikeLink(url) ? 'Use this link' : 'Paste from clipboard'}
+        </button>
+        {error && <p className="mt-2 text-center text-subhead text-danger">{error}</p>}
+
+        <div className="my-6 flex items-center gap-3 text-caption text-text-secondary">
+          <span className="h-px flex-1 bg-text-secondary/20" />
+          or
+          <span className="h-px flex-1 bg-text-secondary/20" />
+        </div>
+
+        <button type="button" onClick={onManual} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-surface-2 text-body font-semibold">
+          <PencilCircle className="text-[20px] text-primary" />
+          Fill in by hand
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** Step 2: the wish card itself. */
+function WishForm({ gift, draft, lists, onClose, onBack }) {
+  const { me, pair, partner } = useSession();
   const photoInput = useRef(null);
   const [form, setForm] = useState({
-    url: gift?.url ?? '',
-    title: gift?.title ?? '',
-    price: gift?.price ?? '',
-    currency: gift?.currency ?? me.currency ?? 'EUR',
+    url: gift?.url ?? draft?.url ?? '',
+    title: gift?.title ?? draft?.title ?? '',
+    price: gift?.price ?? draft?.price ?? '',
+    currency: gift?.currency ?? (CURRENCIES.includes(draft?.currency) ? draft.currency : me.currency ?? 'EUR'),
     note: gift?.note ?? '',
+    list: gift?.list ?? draft?.list ?? '',
+    is_secret: gift?.is_secret ?? false,
   });
-  const [image, setImage] = useState(undefined); // File | URL string | undefined (keep)
-  const [preview, setPreview] = useState(gift?.image_urlSrc ?? null);
-  const [fetching, setFetching] = useState(false);
+  const [image, setImage] = useState(draft?.image ?? undefined); // File | URL | undefined (keep)
+  const [preview, setPreview] = useState(gift?.image_urlSrc ?? draft?.image ?? null);
+  const [newList, setNewList] = useState(null); // string while typing a new list name
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
-
-  // Pull the photo, name and price from the shop page.
-  async function fillFromLink(url) {
-    if (!/^https?:\/\//i.test(url.trim())) return;
-    setFetching(true);
-    const info = await apiGet(`/api/link-preview?url=${encodeURIComponent(url.trim())}`);
-    setFetching(false);
-    if (!info) return;
-    setForm((f) => ({
-      ...f,
-      title: f.title || info.title || '',
-      price: f.price || info.price || '',
-      currency: info.currency && CURRENCIES.includes(info.currency) ? info.currency : f.currency,
-    }));
-    if (info.image && !preview) {
-      setImage(info.image);
-      setPreview(info.image);
-    }
-  }
+  const allLists = [...new Set([...lists, form.list].filter(Boolean))];
 
   async function save() {
     setBusy(true);
@@ -62,31 +128,16 @@ function GiftForm({ gift, onClose }) {
   return (
     <>
       <Toolbar top innerClassName="w-full! items-center! justify-between">
-        <Link toolbar onClick={() => onClose(false)}>
-          Cancel
+        <Link toolbar onClick={gift ? () => onClose(false) : onBack}>
+          {gift ? 'Cancel' : 'Back'}
         </Link>
         <span className="text-body font-semibold">{gift ? 'Edit wish' : 'New wish'}</span>
         <Link toolbar onClick={save} className={busy || !form.title.trim() ? 'pointer-events-none opacity-40' : ''}>
-          <b>{gift ? 'Save' : 'Add'}</b>
+          <b>{busy ? 'Saving…' : gift ? 'Save' : 'Add'}</b>
         </Link>
       </Toolbar>
 
-      <div className="max-h-[78vh] overflow-auto pb-safe-8">
-        <FieldGroup footer="Paste a link — the photo, name and price fill in by themselves when the shop allows it.">
-          <Field label="Link">
-            <TextInput
-              type="url"
-              inputMode="url"
-              placeholder="https://"
-              value={form.url}
-              onChange={set('url')}
-              onBlur={(e) => fillFromLink(e.target.value)}
-              onPaste={(e) => fillFromLink(e.clipboardData.getData('text'))}
-            />
-            {fetching && <Preloader className="h-5! w-5!" />}
-          </Field>
-        </FieldGroup>
-
+      <div className="max-h-[80vh] overflow-auto pb-safe-8">
         <input
           ref={photoInput}
           type="file"
@@ -99,38 +150,135 @@ function GiftForm({ gift, onClose }) {
             setPreview(URL.createObjectURL(file));
           }}
         />
+        {/* Big photo on top, like the wish card */}
         <button
           type="button"
           onClick={() => photoInput.current?.click()}
-          className="mx-auto mt-6 flex h-36 w-36 items-center justify-center overflow-hidden rounded-card bg-surface text-text-secondary"
+          className="relative mx-4 mt-1 flex aspect-[4/3] w-[calc(100%-2rem)] items-center justify-center overflow-hidden rounded-card bg-surface-2"
         >
           {preview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="" className="h-full w-full object-cover" />
+              <span className="absolute end-3 bottom-3 flex h-9 items-center gap-1.5 rounded-full bg-black/55 px-3 text-subhead text-white backdrop-blur-md">
+                <CameraFill className="text-[15px]" />
+                Change
+              </span>
+            </>
           ) : (
-            <span className="flex flex-col items-center gap-1 text-caption">
-              <Camera className="text-[28px] text-primary" />
-              Add photo
+            <span className="flex flex-col items-center gap-2 text-subhead text-text-secondary">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white">
+                <CameraFill className="text-[24px]" />
+              </span>
+              Add a photo
             </span>
           )}
         </button>
 
-        <FieldGroup>
-          <Field label="Name">
-            <TextInput value={form.title} placeholder="Required" onChange={set('title')} />
-          </Field>
-          <Field label="Price">
-            <TextInput type="number" inputMode="decimal" value={form.price} placeholder="Optional" onChange={set('price')} />
-            <select value={form.currency} onChange={set('currency')} className="w-16 shrink-0 bg-transparent text-end text-body text-text-secondary outline-none">
+        <div className="px-4 pt-4">
+          <textarea
+            value={form.title}
+            onChange={set('title')}
+            placeholder="What do you wish for?"
+            rows={2}
+            className="w-full resize-none bg-transparent text-title leading-tight font-bold outline-none placeholder:text-text-secondary/50"
+          />
+          <div className="mt-1 flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              value={form.price}
+              onChange={set('price')}
+              placeholder="Price"
+              className="h-11 w-32 rounded-control bg-surface-2 px-3 text-body font-semibold outline-none placeholder:font-normal placeholder:text-text-secondary/60"
+            />
+            <select value={form.currency} onChange={set('currency')} className="h-11 rounded-control bg-surface-2 px-3 text-body outline-none">
               {CURRENCIES.map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </select>
-          </Field>
-          <Field label="Note">
-            <TextInput value={form.note} placeholder="Size M, black…" onChange={set('note')} />
-          </Field>
-        </FieldGroup>
+          </div>
+        </div>
+
+        <section className="mx-4 mt-5 overflow-hidden rounded-card bg-surface">
+          <label className="flex min-h-12 items-center gap-3 border-b border-text-secondary/15 px-4">
+            <LinkIcon className="shrink-0 text-[18px] text-text-secondary" />
+            <input
+              type="url"
+              inputMode="url"
+              value={form.url}
+              onChange={set('url')}
+              placeholder="Where to buy (link)"
+              className="h-12 min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-text-secondary/60"
+            />
+          </label>
+          <textarea
+            value={form.note}
+            onChange={set('note')}
+            placeholder="Comment: size, color, anything that helps"
+            rows={2}
+            className="block w-full resize-none bg-transparent px-4 py-3 text-body outline-none placeholder:text-text-secondary/60"
+          />
+        </section>
+
+        <h3 className="mx-8 mt-5 mb-2 text-caption font-semibold tracking-wide text-text-secondary uppercase">List</h3>
+        <div className="flex flex-wrap gap-2 px-4">
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, list: '' })}
+            className={`h-9 rounded-full px-3.5 text-subhead ${!form.list ? 'bg-accent text-white' : 'bg-surface'}`}
+          >
+            Just wishes
+          </button>
+          {allLists.map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setForm({ ...form, list: l })}
+              className={`h-9 rounded-full px-3.5 text-subhead ${form.list === l ? 'bg-accent text-white' : 'bg-surface'}`}
+            >
+              {l}
+            </button>
+          ))}
+          {newList === null ? (
+            <button
+              type="button"
+              onClick={() => setNewList('')}
+              className="flex h-9 items-center gap-1 rounded-full border border-dashed border-text-secondary/40 px-3.5 text-subhead text-primary"
+            >
+              <Plus className="text-[14px]" />
+              New list
+            </button>
+          ) : (
+            <input
+              autoFocus
+              value={newList}
+              onChange={(e) => setNewList(e.target.value)}
+              onBlur={() => {
+                if (newList.trim()) setForm((f) => ({ ...f, list: newList.trim() }));
+                setNewList(null);
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+              placeholder="Birthday, Home…"
+              className="h-9 w-40 rounded-full bg-surface px-3.5 text-subhead outline-none"
+            />
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setForm({ ...form, is_secret: !form.is_secret })}
+          className="mx-4 mt-5 flex min-h-14 w-[calc(100%-2rem)] items-center gap-3 rounded-card bg-surface px-4 text-start"
+        >
+          <LockFill className={`shrink-0 text-[18px] ${form.is_secret ? 'text-primary' : 'text-text-secondary'}`} />
+          <span className="flex-1">
+            <span className="block text-body">Secret wish</span>
+            <span className="block text-caption text-text-secondary">Only you will see it — {partner?.name ?? 'she'} won’t.</span>
+          </span>
+          <span className="pointer-events-none">
+            <Toggle component="span" checked={form.is_secret} readOnly />
+          </span>
+        </button>
 
         {error && <p className="mx-8 mt-3 text-subhead text-danger">{error}</p>}
       </div>
@@ -138,10 +286,40 @@ function GiftForm({ gift, onClose }) {
   );
 }
 
-export default function GiftSheet({ opened, gift, onClose }) {
+/** Add a wish (link first, then the card) or edit one. onClose(changed). */
+export default function GiftSheet({ opened, gift, lists = [], defaultList, onClose }) {
+  const [step, setStep] = useState('link'); // 'link' | 'form'
+  const [draft, setDraft] = useState(null);
+  const close = (changed) => {
+    setStep('link');
+    setDraft(null);
+    onClose(changed);
+  };
+
   return (
-    <Sheet opened={opened} onBackdropClick={() => onClose(false)} className="w-full">
-      {opened && <GiftForm gift={gift} onClose={onClose} />}
+    <Sheet opened={opened} onBackdropClick={() => close(false)} className="w-full">
+      {opened &&
+        (gift || step === 'form' ? (
+          <WishForm
+            gift={gift}
+            draft={{ list: defaultList, ...draft }}
+            lists={lists}
+            onClose={close}
+            onBack={() => {
+              setStep('link');
+              setDraft(null);
+            }}
+          />
+        ) : (
+          <LinkStep
+            onCancel={() => close(false)}
+            onManual={() => setStep('form')}
+            onFilled={(info) => {
+              setDraft(info);
+              setStep('form');
+            }}
+          />
+        ))}
     </Sheet>
   );
 }

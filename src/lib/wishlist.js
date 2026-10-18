@@ -41,11 +41,14 @@ export async function saveGift(gift, { me, pair, image }) {
     price: gift.price === '' || gift.price == null ? null : Number(gift.price),
     currency: gift.currency || null,
     note: gift.note?.trim() || null,
+    list: gift.list?.trim() || null,
+    is_secret: Boolean(gift.is_secret),
     image_url,
   };
-  if (gift.id) return supabase.from('gifts').update(row).eq('id', gift.id);
+  if (gift.id) return supabase.from('gifts').update(row).eq('id', gift.id).select().single();
   const result = await supabase.from('gifts').insert({ ...row, pair_id: pair.id, wisher_id: me.id }).select().single();
-  if (!result.error) {
+  // Secret wishes stay quiet: no feed entry, no notification.
+  if (!result.error && !row.is_secret) {
     await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'gift', target_id: result.data.id });
     notify('wish');
   }

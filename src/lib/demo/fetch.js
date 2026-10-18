@@ -3,7 +3,7 @@
 
 import { DEMO_HER, DEMO_ME, buildDemoDb } from './data';
 
-const DB_KEY = 'demo-db';
+const DB_KEY = 'demo-db-v2'; // bump when the demo data changes shape
 
 let db = null;
 function load() {
@@ -104,6 +104,7 @@ function visible(table, rows) {
   if (table === 'gift_reservations') return rows.filter((r) => r.giver_id === DEMO_ME);
   if (table === 'trip_budgets') return rows.filter((b) => b.profile_id === DEMO_ME || b.visible_to_partner);
   if (table === 'events') return rows.filter((e) => e.author_id === DEMO_ME || !e.is_private);
+  if (table === 'gifts') return rows.filter((g) => g.wisher_id === DEMO_ME || !g.is_secret);
   return rows;
 }
 
