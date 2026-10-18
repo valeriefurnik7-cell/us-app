@@ -12,8 +12,8 @@ export const CURRENCIES = ['EUR', 'USD', 'GBP', 'PLN', 'CZK', 'HUF', 'CHF', 'RUB
 
 const looksLikeLink = (text) => /^https?:\/\/\S+$/i.test(text.trim());
 
-/** Step 1, like Ohmywishes: paste a link and let the card fill itself — or start from scratch. */
-function LinkStep({ onFilled, onManual, onCancel }) {
+/** Optional, like Ohmywishes: paste a link and let the card fill itself — or go back to filling it by hand. */
+function LinkStep({ onFilled, onCancel }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -44,7 +44,7 @@ function LinkStep({ onFilled, onManual, onCancel }) {
       <Toolbar top innerClassName="w-full! items-center! justify-between">
         <span className="ps-2 text-body font-semibold">New wish</span>
         <Link toolbar onClick={onCancel}>
-          Cancel
+          Back
         </Link>
       </Toolbar>
       <div className="px-4 pt-2 pb-safe-8">
@@ -83,7 +83,7 @@ function LinkStep({ onFilled, onManual, onCancel }) {
           <span className="h-px flex-1 bg-text-secondary/20" />
         </div>
 
-        <button type="button" onClick={onManual} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-surface-2 text-body font-semibold">
+        <button type="button" onClick={onCancel} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-surface-2 text-body font-semibold">
           <PencilCircle className="text-[20px] text-primary" />
           Fill in by hand
         </button>
@@ -92,7 +92,7 @@ function LinkStep({ onFilled, onManual, onCancel }) {
   );
 }
 
-/** Step 2: the wish card itself. */
+/** The wish card itself — what opens first. */
 function WishForm({ gift, draft, lists, onClose, onBack }) {
   const { me, pair, partner } = useSession();
   const photoInput = useRef(null);
@@ -129,8 +129,8 @@ function WishForm({ gift, draft, lists, onClose, onBack }) {
   return (
     <>
       <Toolbar top innerClassName="w-full! items-center! justify-between">
-        <Link toolbar onClick={gift ? () => onClose(false) : onBack}>
-          {gift ? 'Cancel' : 'Back'}
+        <Link toolbar onClick={() => onClose(false)}>
+          Cancel
         </Link>
         <span className="text-body font-semibold">{gift ? 'Edit wish' : 'New wish'}</span>
         <Link toolbar onClick={save} className={busy || !form.title.trim() ? 'pointer-events-none opacity-40' : ''}>
@@ -151,6 +151,13 @@ function WishForm({ gift, draft, lists, onClose, onBack }) {
             setPreview(URL.createObjectURL(file));
           }}
         />
+        {/* Hand-filled by default; a link can still fill photo, name and price in one go */}
+        {!gift && !form.title && !preview && (
+          <button type="button" onClick={onBack} className="mx-4 mb-3 flex h-11 w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-full bg-surface-2 text-subhead font-semibold text-primary">
+            <LinkIcon className="text-[16px]" />
+            Autofill from a link
+          </button>
+        )}
         {/* Big photo on top, like the wish card */}
         <button
           type="button"
@@ -287,12 +294,12 @@ function WishForm({ gift, draft, lists, onClose, onBack }) {
   );
 }
 
-/** Add a wish (link first, then the card) or edit one. onClose(changed). */
+/** Add a wish (by hand, or autofilled from a link) or edit one. onClose(changed). */
 export default function GiftSheet({ opened, gift, lists = [], defaultList, onClose }) {
-  const [step, setStep] = useState('link'); // 'link' | 'form'
+  const [step, setStep] = useState('form'); // 'form' | 'link'
   const [draft, setDraft] = useState(null);
   const close = (changed, saved) => {
-    setStep('link');
+    setStep('form');
     setDraft(null);
     onClose(changed, saved);
   };
@@ -306,15 +313,11 @@ export default function GiftSheet({ opened, gift, lists = [], defaultList, onClo
             draft={{ list: defaultList, ...draft }}
             lists={lists}
             onClose={close}
-            onBack={() => {
-              setStep('link');
-              setDraft(null);
-            }}
+            onBack={() => setStep('link')}
           />
         ) : (
           <LinkStep
-            onCancel={() => close(false)}
-            onManual={() => setStep('form')}
+            onCancel={() => setStep('form')}
             onFilled={(info) => {
               setDraft(info);
               setStep('form');

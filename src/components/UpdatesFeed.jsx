@@ -1,7 +1,7 @@
 'use client';
 
 import NextLink from '@/components/AppLink';
-import { Airplane, Film, Gift, MapPin, Paw, Sparkles } from 'framework7-icons/react';
+import { Airplane, Calendar, Camera, Film, Gift, MapPin, Paw, Sparkles } from 'framework7-icons/react';
 import Avatar from './Avatar';
 import { useSession } from './SessionProvider';
 import { timeAgo, dayKey } from '@/lib/dates';
@@ -31,6 +31,21 @@ function Byline({ item, light }) {
 
 const ICONS = { gift: Gift, watch: Film, dream: Sparkles, place: MapPin, trip: Airplane, pet_added: Paw, cat_added: Paw };
 
+/** The small icon next to the category name — one per kind, so the feed scans at a glance. */
+const KIND_ICONS = { ...ICONS, pet_photo: Camera, cat_photo: Camera, event: Calendar };
+const KIND_COLOR = {
+  pet_photo: 'text-her',
+  cat_photo: 'text-her',
+  pet_added: 'text-her',
+  cat_added: 'text-her',
+  gift: 'text-me',
+  watch: 'text-primary',
+  dream: 'text-together',
+  event: 'text-danger',
+  trip: 'text-primary',
+  place: 'text-her',
+};
+
 const ICON_TINT = {
   pet_photo: 'bg-her/15 text-her',
   cat_photo: 'bg-her/15 text-her',
@@ -46,6 +61,7 @@ const ICON_TINT = {
 /** Every update is the same size; the picture (or a date page / icon) tells the kinds apart. */
 function UpdateCard({ item }) {
   const Icon = ICONS[item.kind] ?? Sparkles;
+  const KindIcon = KIND_ICONS[item.kind] ?? Sparkles;
   const date = item.kind === 'event' && item.date ? new Date(item.date) : null;
   const round = item.kind === 'pet_added' || item.kind === 'cat_added';
   const kindLabel = {
@@ -83,7 +99,10 @@ function UpdateCard({ item }) {
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-caption font-semibold tracking-wide text-text-secondary uppercase">{kindLabel}</span>
+        <span className="flex items-center gap-1 text-caption font-semibold tracking-wide text-text-secondary uppercase">
+          <KindIcon className={`text-[13px] ${KIND_COLOR[item.kind] ?? ''}`} />
+          {kindLabel}
+        </span>
         <span className="block truncate text-body font-semibold">{title}</span>
         <Byline item={item} />
       </span>

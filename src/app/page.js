@@ -279,9 +279,9 @@ export default function HomePage() {
       <AppNavbar title="Home" />
       <UsCard />
       <InviteCard />
+      <Counters counts={home.data?.counts} />
       <Countdown meeting={home.data?.nextMeeting} lastMeeting={home.data?.lastMeeting} loading={home.loading} />
       <PetOfDay />
-      <Counters counts={home.data?.counts} />
       <Updates />
     </Screen>
   );
