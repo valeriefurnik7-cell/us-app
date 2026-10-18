@@ -1,0 +1,79 @@
+@import "tailwindcss";
+@import "konsta/react/theme.css";
+
+/* Konsta brand color (light-theme accent). Dark accent is overridden below. */
+@theme {
+  --color-brand-primary: #6e5ae6;
+
+  /* Konsta iOS surfaces → system iOS backgrounds from the spec */
+  --color-ios-light-surface: #f2f2f7;
+  --color-ios-light-surface-1: #ffffff;
+  --color-ios-dark-surface: #000000;
+  --color-ios-dark-surface-1: #1c1c1e;
+
+  /* Type scale (iOS) */
+  --text-large-title: 34px;
+  --text-title: 22px;
+  --text-body: 17px;
+  --text-subhead: 15px;
+  --text-caption: 12px;
+
+  --radius-card: 20px;
+  --radius-control: 12px;
+}
+
+/* Design tokens — the only source of colors in the app */
+:root {
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --surface-2: #e5e5ea;
+  --text: #000000;
+  --text-secondary: #6c6c70;
+  --accent: #6e5ae6;
+  --me: #f2784b;
+  --her: #1fae8c;
+  --together: #d9a21b;
+  --danger: #ff3b30;
+}
+
+.dark {
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --text: #ffffff;
+  --text-secondary: #8e8e93;
+  --accent: #8b7cf6;
+  --me: #ff9f7a;
+  --her: #5ed1b5;
+  --together: #f5c451;
+  --danger: #ff453a;
+
+  /* Konsta primary in dark theme */
+  --k-color-primary: rgb(139 124 246);
+  --k-color-ios-primary: rgb(139 124 246);
+  --k-color-ios-primary-tint: rgb(173 162 249);
+  --k-color-ios-primary-shade: rgb(105 86 243);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
+  --color-me: var(--me);
+  --color-her: var(--her);
+  --color-together: var(--together);
+  --color-danger: var(--danger);
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ios);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
