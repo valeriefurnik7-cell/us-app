@@ -67,7 +67,9 @@ export default function AppShell({ children }) {
     <ThemeProvider>
       <SectionContext.Provider value={section}>
       <MainScreenContext.Provider value={mainScreen}>
-        <App theme="ios" dark safeAreas>
+        {/* Konsta sizes the app with 100vh, which in Safari is taller than the visible screen
+            and hides the bottom of every page under the tabbar. 100dvh is exactly what's visible. */}
+        <App theme="ios" dark safeAreas className="h-dvh! min-h-0!">
           {isConfigured ? (
             <SessionProvider>
               <Gate>{children}</Gate>

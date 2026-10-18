@@ -74,6 +74,23 @@ export async function disablePush() {
   await subscription.unsubscribe();
 }
 
+/** Sends a push to my own devices and says what happened, for Settings. */
+export async function sendTestPush() {
+  if (isDemo) return 'Notifications are off in demo mode.';
+  const { data } = await supabase.auth.getSession();
+  const res = await fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` },
+    body: JSON.stringify({ kind: 'test' }),
+  }).catch(() => null);
+  const result = res?.ok ? await res.json() : null;
+  if (!result) return 'Couldn’t reach the server. Check the internet connection.';
+  if (result.status === 'no_server_key') return 'The server has no notification key yet: add VAPID_PRIVATE_KEY and NEXT_PUBLIC_VAPID_PUBLIC_KEY in Vercel, then redeploy.';
+  if (result.status === 'no_devices') return 'This phone isn’t subscribed yet — turn on “This phone” above first.';
+  if (result.status === 'failed') return `Apple refused the notification: ${result.failures[0]}`;
+  return `Sent to ${result.devices} device${result.devices === 1 ? '' : 's'}. It should appear in a few seconds.`;
+}
+
 /** Tell the partner about something I just did. Fire and forget — never blocks the UI. */
 export function notify(kind, details = {}) {
   if (isDemo) return;

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { sendPushes } from '@/lib/server/push';
+import { isPushConfigured, sendPushes } from '@/lib/server/push';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -18,13 +18,25 @@ export async function POST(request) {
   const token = request.headers.get('authorization')?.replace(/^Bearer /, '');
   if (!token) return Response.json({ error: 'unauthorized' }, { status: 401 });
   const { kind, ...details } = await request.json().catch(() => ({}));
-  const message = MESSAGES[kind];
-  if (!message) return Response.json({ error: 'unknown_kind' }, { status: 400 });
 
   // Act as the user: RLS and the partner_push_targets() function decide whom we may reach.
   const supabase = createClient(url, key, { global: { headers: { authorization: `Bearer ${token}` } }, auth: { persistSession: false } });
   const { data: user } = await supabase.auth.getUser(token);
   if (!user?.user) return Response.json({ error: 'unauthorized' }, { status: 401 });
+
+  // "Send a test notification" from Settings: to my own devices, with a report of what went wrong.
+  if (kind === 'test') {
+    if (!isPushConfigured()) return Response.json({ status: 'no_server_key' });
+    const { data: mine } = await supabase.from('push_subscriptions').select('endpoint, keys');
+    if (!mine?.length) return Response.json({ status: 'no_devices' });
+    const failures = [];
+    const dead = await sendPushes(mine, { title: 'Us', body: 'Test notification — it works!', url: '/settings' }, failures);
+    await Promise.all(dead.map((endpoint) => supabase.from('push_subscriptions').delete().eq('endpoint', endpoint)));
+    return Response.json({ status: failures.length ? 'failed' : 'sent', devices: mine.length, failures });
+  }
+
+  const message = MESSAGES[kind];
+  if (!message) return Response.json({ error: 'unknown_kind' }, { status: 400 });
 
   const [{ data: me }, { data: targets }] = await Promise.all([
     supabase.from('profiles').select('name').eq('id', user.user.id).single(),

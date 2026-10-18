@@ -12,7 +12,7 @@ import { AccentSwatches } from '@/components/AppearanceSheet';
 import { applyAccent, parseTheme, saveTheme } from '@/lib/appearance';
 import { isDemo, supabase } from '@/lib/supabase';
 import { disableDemo, enableDemo } from '@/lib/demo/mode';
-import { NOTIFICATION_TYPES, currentSubscription, disablePush, enablePush, pushSupport } from '@/lib/push';
+import { NOTIFICATION_TYPES, currentSubscription, disablePush, enablePush, pushSupport, sendTestPush } from '@/lib/push';
 
 const MODES = [
   { id: 'dark', label: 'Dark' },
@@ -46,6 +46,7 @@ function Notifications() {
   const [enabled, setEnabled] = useState(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState(null);
+  const [testResult, setTestResult] = useState(null);
   const prefs = me.notify_prefs ?? {};
 
   useEffect(() => {
@@ -104,6 +105,23 @@ function Notifications() {
           </button>
         </li>
       </FieldGroup>
+
+      {support === 'supported' && (
+        <FieldGroup footer={testResult}>
+          <li>
+            <button
+              type="button"
+              onClick={async () => {
+                setTestResult('Sending…');
+                setTestResult(await sendTestPush());
+              }}
+              className="h-12 w-full px-4 text-start text-body text-primary"
+            >
+              Send a test notification
+            </button>
+          </li>
+        </FieldGroup>
+      )}
 
       {enabled && (
         <FieldGroup title="Notify me about">
