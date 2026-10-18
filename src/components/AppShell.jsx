@@ -9,12 +9,16 @@ import AppTabbar from './AppTabbar';
 import { AccentFromPair } from './AppearanceSheet';
 import LoginScreen from './auth/LoginScreen';
 import OnboardingScreen from './auth/OnboardingScreen';
-import { TABS, tabForPath } from '@/lib/tabs';
+import { TABBAR_SCREENS, TABS, tabForPath } from '@/lib/tabs';
 import { isConfigured } from '@/lib/supabase';
 
 // Remembers the last tab section so inner screens can show "‹ Section" as the back label.
 const SectionContext = createContext(TABS[0]);
 export const useParentSection = () => useContext(SectionContext);
+
+// Last screen with a tabbar — where the full-screen pets chat goes back to.
+const MainScreenContext = createContext(TABS[0]);
+export const useLastMainScreen = () => useContext(MainScreenContext);
 
 function Gate({ children }) {
   const pathname = usePathname();
@@ -54,12 +58,15 @@ function NotConfigured() {
 export default function AppShell({ children }) {
   const pathname = usePathname();
   const [section, setSection] = useState(TABS[0]);
+  const [mainScreen, setMainScreen] = useState(TABS[0]);
   const tab = tabForPath(pathname);
   if (tab && tab !== section) setSection(tab);
+  if (tab && TABBAR_SCREENS.has(tab.href) && tab !== mainScreen) setMainScreen(tab);
 
   return (
     <ThemeProvider>
       <SectionContext.Provider value={section}>
+      <MainScreenContext.Provider value={mainScreen}>
         <App theme="ios" dark safeAreas>
           {isConfigured ? (
             <SessionProvider>
@@ -69,6 +76,7 @@ export default function AppShell({ children }) {
             <NotConfigured />
           )}
         </App>
+      </MainScreenContext.Provider>
       </SectionContext.Provider>
     </ThemeProvider>
   );

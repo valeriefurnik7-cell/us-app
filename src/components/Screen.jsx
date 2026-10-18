@@ -1,7 +1,9 @@
 'use client';
 
 import { ViewTransition } from 'react';
+import { usePathname } from 'next/navigation';
 import { Page } from 'konsta/react';
+import { TABBAR_SCREENS } from '@/lib/tabs';
 
 // Navigation tags → animation classes in globals.css. Untagged updates don't animate.
 const MOTION = { 'nav-forward': 'nav-forward', 'nav-back': 'nav-back', tab: 'tab', default: 'none' };
@@ -10,10 +12,14 @@ const MOTION = { 'nav-forward': 'nav-forward', 'nav-back': 'nav-back', tab: 'tab
  * Scrollable screen. Bottom padding keeps content clear of the floating tabbar and home indicator.
  * Slides in/out like iOS when navigating deeper or back; crossfades between tabs.
  */
-export default function Screen({ children, className = 'pb-[calc(var(--k-safe-area-bottom)+120px)]' }) {
+export default function Screen({ children, className }) {
+  const pathname = usePathname();
+  // Main screens leave room for the floating tabbar; inner screens have none, just the home indicator.
+  const onTabRoot = TABBAR_SCREENS.has(pathname);
+  const padding = className ?? (onTabRoot ? 'pb-[calc(var(--k-safe-area-bottom)+120px)]' : 'pb-[calc(var(--k-safe-area-bottom)+32px)]');
   return (
     <ViewTransition enter={MOTION} exit={MOTION} default="none">
-      <Page className={className}>{children}</Page>
+      <Page className={padding}>{children}</Page>
     </ViewTransition>
   );
 }

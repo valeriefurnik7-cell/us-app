@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import NextLink from '@/components/AppLink';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tabbar, TabbarLink } from 'konsta/react';
-import { TABS, tabForPath } from '@/lib/tabs';
+import { TABBAR_SCREENS, TABS, tabForPath } from '@/lib/tabs';
 import { useParentSection } from './AppShell';
 import { useSession } from './SessionProvider';
 import { useTabBadges } from '@/lib/badges';
@@ -33,6 +33,8 @@ export default function AppTabbar() {
   const parent = useParentSection();
   // Inner screens (profile, settings) keep their parent tab highlighted.
   const highlighted = tabForPath(pathname) ?? parent;
+  // Only the five main screens show the tabbar; deeper screens go back with ‹, like iOS.
+  const onTabRoot = TABBAR_SCREENS.has(pathname);
   const activeIndex = TABS.indexOf(highlighted);
   const indicatorRef = useRef(null);
   const drag = useRef(null);
@@ -121,7 +123,8 @@ export default function AppTabbar() {
     <Tabbar
       labels
       icons
-      className="fixed bottom-0 left-0 touch-pan-y"
+      className="app-bottom-bar fixed bottom-0 left-0 touch-pan-y"
+      data-hidden={onTabRoot ? undefined : ''}
       style={{ viewTransitionName: 'tabbar' }}
       innerClassName={GLASS}
       onPointerDown={onPointerDown}

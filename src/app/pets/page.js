@@ -5,7 +5,8 @@ import NextLink from '@/components/AppLink';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel } from 'konsta/react';
 import { ArrowUpCircleFill, Camera, FlameFill, Paw, Plus } from 'framework7-icons/react';
 import Screen from '@/components/Screen';
-import { AppNavbar } from '@/components/AppNavbar';
+import { InnerNavbar } from '@/components/AppNavbar';
+import { useLastMainScreen } from '@/components/AppShell';
 import { useSession } from '@/components/SessionProvider';
 import MessageBubble from '@/components/pets/MessageBubble';
 import MediaViewer from '@/components/pets/MediaViewer';
@@ -16,8 +17,8 @@ import { dayKey } from '@/lib/dates';
 
 const NO_MESSAGES = [];
 
-// The composer floats right above the tabbar.
-const COMPOSER_BOTTOM = 'bottom-[calc(var(--k-safe-area-bottom)+100px)]';
+// Full-screen chat: no tabbar, the composer sits right above the home indicator.
+const COMPOSER_BOTTOM = 'bottom-[calc(var(--k-safe-area-bottom)+10px)]';
 
 function dayLabel(iso) {
   const key = dayKey(iso);
@@ -87,7 +88,7 @@ function Composer({ onPhoto, onSend }) {
   return (
     <form
       onSubmit={send}
-      className={`fixed inset-x-0 z-20 mx-4 flex items-center gap-1 rounded-full bg-ios-light-glass p-1 shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass ${COMPOSER_BOTTOM}`}
+      className={`app-bottom-bar fixed inset-x-0 z-20 mx-4 flex items-center gap-1 rounded-full bg-ios-light-glass p-1 shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass ${COMPOSER_BOTTOM}`}
     >
       <button type="button" onClick={onPhoto} aria-label="Send photo" className="flex h-11 w-11 shrink-0 items-center justify-center text-primary">
         <Camera className="text-[24px]" />
@@ -113,6 +114,7 @@ function Composer({ onPhoto, onSend }) {
 
 export default function PetsPage() {
   const { me, partner, pair } = useSession();
+  const lastMain = useLastMainScreen();
   const pets = usePets();
   const feed = useFeed();
   const [uploadFiles, setUploadFiles] = useState(null);
@@ -140,18 +142,22 @@ export default function PetsPage() {
   }, [messages, me.id]);
 
   return (
-    <Screen className="pb-[calc(var(--k-safe-area-bottom)+164px)]">
-      <AppNavbar
-        title="Pets"
-        subnavbar={<PetsRow pets={petList} loading={pets.loading} onAdd={() => setAddingPet(true)} />}
-        titleAccessory={
-          streak > 0 && (
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-together/15 px-2 py-0.5 text-subhead font-semibold text-together">
-              <FlameFill className="text-[16px]" />
-              {streak}
-            </span>
-          )
+    <Screen className="pb-[calc(var(--k-safe-area-bottom)+80px)]">
+      <InnerNavbar
+        large={false}
+        back={lastMain}
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            Pets
+            {streak > 0 && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-together/15 px-2 py-0.5 text-subhead font-semibold text-together">
+                <FlameFill className="text-[14px]" />
+                {streak}
+              </span>
+            )}
+          </span>
         }
+        subnavbar={<PetsRow pets={petList} loading={pets.loading} onAdd={() => setAddingPet(true)} />}
       />
       {picker.element}
 

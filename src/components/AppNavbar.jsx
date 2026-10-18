@@ -73,19 +73,26 @@ export function AppNavbar({ title, onAdd, addIcon, titleAccessory, subnavbar }) 
   );
 }
 
-/** Inner screen header: "‹ Parent section" back link + title. */
-export function InnerNavbar({ title }) {
+/**
+ * Inner screen header: "‹ Parent section" back link + title.
+ * `back` overrides where it goes ({ label, href }); `large={false}` gives a compact bar (chat).
+ */
+export function InnerNavbar({ title, back, large = true, subnavbar, right }) {
   const router = useRouter();
   const parent = useParentSection();
+  const target = back ?? parent;
   return (
     <Navbar
-      large
+      large={large}
+      centerTitle={!large}
       title={title}
+      subnavbar={subnavbar}
+      right={right}
       left={
         <NavbarBackLink
           showText
-          text={parent.label}
-          onClick={() => router.push(parent.href, { transitionTypes: ['nav-back'] })}
+          text={target.label}
+          onClick={() => router.push(target.href, { transitionTypes: ['nav-back'] })}
         />
       }
     />
