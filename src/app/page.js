@@ -27,6 +27,8 @@ import { parseTheme } from '@/lib/appearance';
 import { signedUrls } from '@/lib/media';
 import { distanceKm, localHour, localTime, timeDifference, useHome, useNow, useUpdates, useWeather, weatherKind } from '@/lib/home';
 import UpdatesFeed from '@/components/UpdatesFeed';
+import TrophyCard from '@/components/pets/TrophyCard';
+import { usePetsOfDay } from '@/lib/petOfDay';
 import { timeAgo } from '@/lib/dates';
 import { startOfDay } from '@/lib/events';
 
@@ -209,6 +211,22 @@ function Countdown({ meeting, lastMeeting, loading }) {
   );
 }
 
+/** Last night's (or tonight's) Pet of the day, if there is a fresh one. */
+function PetOfDay() {
+  const winners = usePetsOfDay();
+  const latest = winners.data?.[0];
+  if (!latest) return null;
+  const age = (startOfDay(new Date()) - new Date(`${latest.day}T00:00:00`)) / 864e5;
+  if (age > 1) return null;
+  return (
+    <section className="mx-4 mt-3">
+      <NextLink href="/pets/hall" className="block">
+        <TrophyCard winner={latest} compact />
+      </NextLink>
+    </section>
+  );
+}
+
 function Counters({ counts }) {
   const items = [
     ['Meetings', counts?.meetings, '/plans/meetings'],
@@ -262,6 +280,7 @@ export default function HomePage() {
       <UsCard />
       <InviteCard />
       <Countdown meeting={home.data?.nextMeeting} lastMeeting={home.data?.lastMeeting} loading={home.loading} />
+      <PetOfDay />
       <Counters counts={home.data?.counts} />
       <Updates />
     </Screen>

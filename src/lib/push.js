@@ -5,7 +5,7 @@ import { isDemo, supabase } from './supabase';
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
 export const NOTIFICATION_TYPES = [
-  { id: 'pet_of_day', label: 'Pet of the day', hint: 'A daily nudge to send your pet' },
+  { id: 'pet_of_day', label: 'Pet of the day', hint: 'A nudge if no pets were sent by your hour, and the winner at 22:00' },
   { id: 'new_pet', label: 'New pet photos & messages' },
   { id: 'replies', label: 'Reactions to my photos' },
   { id: 'new_event', label: 'New plans in the calendar' },

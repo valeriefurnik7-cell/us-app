@@ -211,6 +211,10 @@ export function buildDemoDb() {
       { id: id('6'), pair_id: PAIR, actor_id: DEMO_HER, kind: 'pet_added', target_id: pets.luna, created_at: hoursAgo(28) },
     ],
     push_subscriptions: [],
+    pet_of_day: [
+      { id: id('w'), pair_id: PAIR, day: ymd(-1), media_id: media.find((m) => m.url === IMG.luna)?.id, post_id: media.find((m) => m.url === IMG.luna)?.post_id, cat_id: pets.luna, created_at: hoursAgo(20) },
+      { id: id('w'), pair_id: PAIR, day: ymd(-2), media_id: media.find((m) => m.url === IMG.bobbyBeach)?.id, post_id: media.find((m) => m.url === IMG.bobbyBeach)?.post_id, cat_id: pets.bobby, created_at: hoursAgo(44) },
+    ],
     change_requests: [],
     shared_expenses: [
       { id: id('0'), pair_id: PAIR, created_by: DEMO_ME, paid_by: DEMO_ME, title: 'Train tickets to Milan', amount: 184, currency: 'EUR', shares: { [DEMO_ME]: 92, [DEMO_HER]: 92 }, category: 'transport', spent_on: ymd(-3), trip_id: trip, event_id: null, is_settlement: false, created_at: hoursAgo(72) },

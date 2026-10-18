@@ -3,7 +3,7 @@
 
 import { DEMO_HER, DEMO_ME, buildDemoDb } from './data';
 
-const DB_KEY = 'demo-db-v4'; // bump when the demo data changes shape
+const DB_KEY = 'demo-db-v5'; // bump when the demo data changes shape
 
 let db = null;
 function load() {

@@ -11,6 +11,8 @@ import MessageBubble from '@/components/pets/MessageBubble';
 import MediaViewer from '@/components/pets/MediaViewer';
 import UploadSheet, { useMediaPicker } from '@/components/pets/UploadSheet';
 import CommentsSheet from '@/components/pets/CommentsSheet';
+import { Trophy } from '@/components/pets/TrophyCard';
+import { usePetsOfDay } from '@/lib/petOfDay';
 import { REACTIONS, createPost, deleteMediaItem, deletePost, pairStreak, toggleReaction, usePets, useFeed } from '@/lib/pets';
 import { dayKey } from '@/lib/dates';
 
@@ -126,6 +128,8 @@ export default function PetsPage() {
 
   const petList = pets.data ?? [];
   const messages = feed.data ?? NO_MESSAGES;
+  const winners = usePetsOfDay();
+  const winnersByDay = Object.fromEntries((winners.data ?? []).map((w) => [w.day, w]));
   const streak = pairStreak(messages, me, partner);
 
   // Open at the latest message, and follow new ones like a chat.
@@ -174,6 +178,9 @@ export default function PetsPage() {
         messages.map((post, i) => {
           const prev = messages[i - 1];
           const newDay = !prev || dayKey(prev.createdAt) !== dayKey(post.createdAt);
+          const next = messages[i + 1];
+          const lastOfDay = !next || dayKey(next.createdAt) !== dayKey(post.createdAt);
+          const winner = lastOfDay && winnersByDay[dayKey(post.createdAt)];
           return (
             <Fragment key={post.id}>
               {newDay && <p className="pt-5 pb-1 text-center text-caption font-semibold text-text-secondary">{dayLabel(post.createdAt)}</p>}
@@ -185,6 +192,18 @@ export default function PetsPage() {
                 onMenu={setMenuPost}
                 onComments={setCommentsFor}
               />
+              {winner && (
+                <NextLink href="/pets/hall" className="mx-auto mt-4 flex w-fit items-center gap-2.5 rounded-full bg-together/15 py-1.5 ps-1.5 pe-4">
+                  {winner.src && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={winner.src} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-together" />
+                  )}
+                  <Trophy className="h-5 w-5 text-together" />
+                  <span className="text-subhead font-semibold">
+                    Pet of the day: <b className="font-extrabold">{winner.name}</b>
+                  </span>
+                </NextLink>
+              )}
             </Fragment>
           );
         })
