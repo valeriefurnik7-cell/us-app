@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { App, Block, Page, Preloader } from 'konsta/react';
 import { ThemeProvider } from './ThemeProvider';
 import { SessionProvider, useSession } from './SessionProvider';
@@ -81,11 +81,49 @@ function Gate({ children }) {
   return (
     <>
       <LocationSync />
+      <NotificationRouter />
       <AccentFromPair />
       {children}
       <AppTabbar />
     </>
   );
+}
+
+/** Opens the screen a tapped notification is about (the service worker leaves it in a cache). */
+function NotificationRouter() {
+  const router = useRouter();
+  useEffect(() => {
+    const go = (url) => {
+      if (!url || url === window.location.pathname + window.location.search) return;
+      router.push(url);
+    };
+    const takePending = async () => {
+      if (!('caches' in window)) return;
+      try {
+        const cache = await caches.open('notification-target');
+        const hit = await cache.match('/__notification-target');
+        if (!hit) return;
+        await cache.delete('/__notification-target');
+        go(await hit.text());
+      } catch {}
+    };
+    const onMessage = (e) => {
+      if (e.data?.type !== 'open') return;
+      caches?.open('notification-target').then((c) => c.delete('/__notification-target')).catch(() => {});
+      go(e.data.url);
+    };
+    const onVisible = () => document.visibilityState === 'visible' && takePending();
+    takePending();
+    navigator.serviceWorker?.addEventListener('message', onMessage);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', takePending);
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', onMessage);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', takePending);
+    };
+  }, [router]);
+  return null;
 }
 
 /** Keeps my city (and so time, weather and the distance between us) where the phone actually is. */

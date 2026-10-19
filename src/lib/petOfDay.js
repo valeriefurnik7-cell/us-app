@@ -26,7 +26,7 @@ async function loadWinners() {
     return {
       ...r,
       src: m ? urls[m.url] : null,
-      name: (cats ?? []).find((c) => c.id === r.cat_id)?.name ?? 'Mystery pet',
+      name: (cats ?? []).find((c) => c.id === r.cat_id)?.name?.trim() || 'Unidentified pet',
       sender: (people ?? []).find((x) => x.id === post?.author_id)?.name ?? null,
       sentAt: post?.created_at ?? null,
     };

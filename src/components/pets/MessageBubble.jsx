@@ -128,9 +128,11 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
   const { me, partner } = useSession();
   const mine = post.authorId === me.id;
   const author = mine ? me : partner;
-  const tagged = pets.filter((p) => post.catIds.includes(p.id)).map((p) => p.name);
   const longPress = useLongPress(() => onMenu(post));
   const hasMedia = post.media.length > 0;
+  const tagged = pets.filter((p) => post.catIds.includes(p.id)).map((p) => p.name?.trim() || 'Unnamed pet');
+  // A photo nobody tagged still says it's a pet — just a mysterious one
+  const petLabel = tagged.length ? tagged.join(' & ') : hasMedia ? 'Unidentified pet' : null;
 
   return (
     <div className={`flex items-end gap-2 px-3 ${mine ? 'flex-row-reverse' : ''} ${showAuthor ? 'mt-3' : 'mt-1'}`}>
@@ -156,12 +158,12 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
               longPress={longPress}
             />
           )}
-          {(post.caption || tagged.length > 0) && (
+          {(post.caption || petLabel) && (
             <div className="px-3.5 py-2" onClick={hasMedia ? () => onMenu(post) : undefined}>
-              {tagged.length > 0 && (
+              {petLabel && (
                 <p className={`flex items-center gap-1 text-caption font-semibold ${mine ? 'text-white/80' : 'text-text-secondary'}`}>
                   <Paw className="text-[12px]" />
-                  {tagged.join(' & ')}
+                  {petLabel}
                 </p>
               )}
               {post.caption && <p className="text-body break-words whitespace-pre-wrap">{post.caption}</p>}
