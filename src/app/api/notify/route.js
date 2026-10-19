@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { isPushConfigured, sendPushes } from '@/lib/server/push';
+import { isTelegramConfigured, sendPetPost } from '@/lib/server/telegram';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -14,6 +15,26 @@ const MESSAGES = {
   request: { pref: 'replies', body: (name) => `${name} suggested a change`, url: '/' },
   expense: { pref: 'new_event', body: (name, d) => `${name} added an expense: ${d.title ?? ''}`.trim(), url: '/expenses' },
 };
+
+/** A new pet post also goes to the partner's Telegram, if she connected the bot. */
+async function forwardToTelegram(supabase, postId, myName) {
+  if (!isTelegramConfigured()) return;
+  const { data: chatId } = await supabase.rpc('partner_telegram_chat');
+  if (!chatId) return;
+  const { data: post } = await supabase
+    .from('cat_posts')
+    .select('caption, cat_post_media(url, type, order), cat_post_cats(cats(name))')
+    .eq('id', postId)
+    .single();
+  if (!post) return;
+  const files = [...post.cat_post_media].sort((a, b) => a.order - b.order);
+  // Telegram fetches the files itself, so give it short-lived links to the private bucket
+  const { data: signed } = await supabase.storage.from('media').createSignedUrls(files.map((f) => f.url), 600);
+  const media = files.map((f, i) => ({ type: f.type, url: signed?.[i]?.signedUrl })).filter((m) => m.url);
+  const pets = post.cat_post_cats.map((c) => c.cats?.name?.trim()).filter(Boolean);
+  const caption = [`🐾 ${pets.length ? pets.join(' & ') : 'Unidentified pet'} · from ${myName ?? 'your friend'}`, post.caption].filter(Boolean).join('\n');
+  await sendPetPost(chatId, { media, caption });
+}
 
 /** The signed-in user did something; tell her partner (if she allows this kind of notification). */
 export async function POST(request) {
@@ -47,7 +68,10 @@ export async function POST(request) {
     supabase.rpc('partner_push_targets'),
   ]);
   const allowed = (targets ?? []).filter((t) => t.prefs?.[message.pref] !== false);
-  const dead = await sendPushes(allowed, { title: 'Us', body: message.body(me?.name ?? 'Your friend', details), url: message.url });
+  const [dead] = await Promise.all([
+    sendPushes(allowed, { title: 'Us', body: message.body(me?.name ?? 'Your friend', details), url: message.url }),
+    kind === 'pet_photo' && details.postId ? forwardToTelegram(supabase, details.postId, me?.name) : null,
+  ]);
   await Promise.all(dead.map((endpoint) => supabase.rpc('forget_push_endpoint', { dead_endpoint: endpoint })));
   return Response.json({ sent: allowed.length - dead.length });
 }

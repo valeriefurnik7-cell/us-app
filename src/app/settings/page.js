@@ -156,6 +156,64 @@ function Notifications() {
   );
 }
 
+const BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT; // the bot's @username, without the @
+
+/** Pets from the chat also arrive in Telegram: connect = open the bot with a one-time code. */
+function Telegram() {
+  const { me, partner } = useSession();
+  const [linked, setLinked] = useState(null); // null = loading
+  const [waiting, setWaiting] = useState(false);
+
+  useEffect(() => {
+    const check = () =>
+      supabase
+        .from('telegram_links')
+        .select('chat_id')
+        .eq('profile_id', me.id)
+        .maybeSingle()
+        .then(({ data }) => setLinked(Boolean(data?.chat_id)));
+    check();
+    // Coming back from Telegram after tapping Start
+    const onVisible = () => document.visibilityState === 'visible' && check();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [me.id]);
+
+  if (!BOT || isDemo) return null;
+
+  function connect() {
+    const code = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+    // Open Telegram right in the tap (iOS blocks it later); the code is saved long before she taps Start.
+    window.open(`https://t.me/${BOT}?start=${code}`, '_blank');
+    setWaiting(true);
+    supabase.from('telegram_links').upsert({ profile_id: me.id, link_code: code, chat_id: null }).then(() => {});
+  }
+
+  async function disconnect() {
+    await supabase.from('telegram_links').delete().eq('profile_id', me.id);
+    setLinked(false);
+  }
+
+  return (
+    <FieldGroup
+      title="Telegram"
+      footer={
+        linked
+          ? `Pets from ${partner?.name ?? 'your friend'} arrive in Telegram from @${BOT}.`
+          : waiting
+            ? 'Tap Start in Telegram, then come back here.'
+            : `Get every pet ${partner?.name ?? 'your friend'} sends as a Telegram message too.`
+      }
+    >
+      <li>
+        <button type="button" onClick={linked ? disconnect : connect} className={`h-12 w-full px-4 text-start text-body ${linked ? 'text-danger' : 'text-primary'}`}>
+          {linked === null ? '…' : linked ? 'Disconnect Telegram' : 'Connect Telegram'}
+        </button>
+      </li>
+    </FieldGroup>
+  );
+}
+
 function Accent() {
   const { me, refresh } = useSession();
   return (
@@ -268,6 +326,7 @@ export default function SettingsPage() {
       <Location />
 
       <Notifications />
+      <Telegram />
       <Currency />
 
       <FieldGroup

@@ -95,7 +95,7 @@ export async function createPost({ files = [], catIds = [], caption = '', me, pa
   if (catIds.length) await supabase.from('cat_post_cats').insert(catIds.map((cat_id) => ({ post_id: post.id, cat_id })));
   if (files.length) {
     await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'pet_photo', target_id: post.id });
-    notify('pet_photo');
+    notify('pet_photo', { postId: post.id });
   } else {
     notify('message', { text: post.caption });
   }
