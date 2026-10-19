@@ -193,6 +193,20 @@ function TelegramFriends() {
     setNote(error ? 'Couldn’t create the invite — try again.' : navigator.share ? 'One link = one friend. Make a new one for each person.' : 'Link copied. One link = one friend.');
   }
 
+  async function test() {
+    setNote('Sending the latest pet photo…');
+    const { data } = await supabase.auth.getSession();
+    const res = await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token ?? ''}` },
+      body: JSON.stringify({ kind: 'telegram_test' }),
+    }).catch(() => null);
+    const r = res?.ok ? await res.json() : null;
+    if (!r) return setNote('Couldn’t reach the server.');
+    if (r.error) return setNote(`Not sent: ${r.error}`);
+    setNote(r.errors?.length ? `Sent to ${r.sent} of ${r.chats}. Telegram said: ${r.errors[0]}` : `Sent to ${r.sent} chat${r.sent === 1 ? '' : 's'} 🐾`);
+  }
+
   async function remove(id) {
     await supabase.from('telegram_followers').delete().eq('id', id);
     setFriends((list) => list.filter((f) => f.id !== id));
@@ -213,6 +227,11 @@ function TelegramFriends() {
       <li>
         <button type="button" onClick={invite} className="h-12 w-full px-4 text-start text-body text-primary">
           Invite a friend
+        </button>
+      </li>
+      <li className="border-t border-text-secondary/20">
+        <button type="button" onClick={test} className="h-12 w-full px-4 text-start text-body text-primary">
+          Send a test to Telegram
         </button>
       </li>
     </FieldGroup>
