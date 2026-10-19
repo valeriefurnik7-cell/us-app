@@ -16,11 +16,16 @@ const MESSAGES = {
   expense: { pref: 'new_event', body: (name, d) => `${name} added an expense: ${d.title ?? ''}`.trim(), url: '/expenses' },
 };
 
-/** A new pet post also goes to the partner's Telegram, if she connected the bot. */
+/** A new pet post also goes to Telegram: the partner's (if connected) and every friend who follows. */
 async function forwardToTelegram(supabase, postId, myName) {
   if (!isTelegramConfigured()) return;
-  const { data: chatId } = await supabase.rpc('partner_telegram_chat');
-  if (!chatId) return;
+  // The partner (if she connected the bot) and friends who follow our pets
+  const [{ data: partnerChat }, { data: followers }] = await Promise.all([
+    supabase.rpc('partner_telegram_chat'),
+    supabase.from('telegram_followers').select('chat_id'),
+  ]);
+  const chats = [...new Set([partnerChat, ...(followers ?? []).map((f) => f.chat_id)].filter(Boolean))];
+  if (!chats.length) return;
   const { data: post } = await supabase
     .from('cat_posts')
     .select('caption, cat_post_media(url, type, order), cat_post_cats(cats(name))')
@@ -33,7 +38,7 @@ async function forwardToTelegram(supabase, postId, myName) {
   const media = files.map((f, i) => ({ type: f.type, url: signed?.[i]?.signedUrl })).filter((m) => m.url);
   const pets = post.cat_post_cats.map((c) => c.cats?.name?.trim()).filter(Boolean);
   const caption = [`🐾 ${pets.length ? pets.join(' & ') : 'Unidentified pet'} · from ${myName ?? 'your friend'}`, post.caption].filter(Boolean).join('\n');
-  await sendPetPost(chatId, { media, caption });
+  await Promise.all(chats.map((chatId) => sendPetPost(chatId, { media, caption })));
 }
 
 /** The signed-in user did something; tell her partner (if she allows this kind of notification). */

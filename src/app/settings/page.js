@@ -158,6 +158,67 @@ function Notifications() {
 
 const BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT; // the bot's @username, without the @
 
+const randomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+
+/** Friends outside the app who get our pets through the bot: one invite link per friend. */
+function TelegramFriends() {
+  const { me, pair } = useSession();
+  const [friends, setFriends] = useState([]);
+  const [note, setNote] = useState(null);
+
+  useEffect(() => {
+    const load = () =>
+      supabase
+        .from('telegram_followers')
+        .select('id, name, created_at')
+        .order('created_at')
+        .then(({ data }) => setFriends(data ?? []));
+    load();
+    const onVisible = () => document.visibilityState === 'visible' && load();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
+  async function invite() {
+    const code = randomCode();
+    const link = `https://t.me/${BOT}?start=f_${code}`;
+    const saved = supabase.from('telegram_invites').insert({ code, pair_id: pair.id, created_by: me.id });
+    // Share sheet right in the tap (iOS needs that); the invite is saved meanwhile.
+    if (navigator.share) {
+      await navigator.share({ text: `Get our pets in Telegram 🐾 ${link}` }).catch(() => {});
+    } else {
+      await navigator.clipboard?.writeText(link).catch(() => {});
+    }
+    const { error } = await saved;
+    setNote(error ? 'Couldn’t create the invite — try again.' : navigator.share ? 'One link = one friend. Make a new one for each person.' : 'Link copied. One link = one friend.');
+  }
+
+  async function remove(id) {
+    await supabase.from('telegram_followers').delete().eq('id', id);
+    setFriends((list) => list.filter((f) => f.id !== id));
+  }
+
+  return (
+    <FieldGroup title="Friends who get the pets" footer={note ?? 'They get every pet photo from the chat in Telegram — no app needed.'}>
+      {friends.map((f) => (
+        <li key={f.id} className="group flex min-h-12 items-center ps-4">
+          <div className="flex min-h-12 flex-1 items-center gap-3 border-b border-text-secondary/20 pe-2 group-last:border-0">
+            <span className="flex-1 truncate text-body">{f.name || 'Friend'}</span>
+            <button type="button" onClick={() => remove(f.id)} className="h-11 px-2 text-subhead text-danger">
+              Remove
+            </button>
+          </div>
+        </li>
+      ))}
+      <li>
+        <button type="button" onClick={invite} className="h-12 w-full px-4 text-start text-body text-primary">
+          Invite a friend
+        </button>
+      </li>
+    </FieldGroup>
+  );
+}
+
 /** Pets from the chat also arrive in Telegram: connect = open the bot with a one-time code. */
 function Telegram() {
   const { me, partner } = useSession();
@@ -182,7 +243,7 @@ function Telegram() {
   if (!BOT || isDemo) return null;
 
   function connect() {
-    const code = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
+    const code = randomCode();
     // Open Telegram right in the tap (iOS blocks it later); the code is saved long before she taps Start.
     window.open(`https://t.me/${BOT}?start=${code}`, '_blank');
     setWaiting(true);
@@ -327,6 +388,7 @@ export default function SettingsPage() {
 
       <Notifications />
       <Telegram />
+      {BOT && !isDemo && <TelegramFriends />}
       <Currency />
 
       <FieldGroup

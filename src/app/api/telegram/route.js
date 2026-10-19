@@ -18,7 +18,15 @@ export async function POST(request) {
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const [command, code] = (message.text ?? '').trim().split(/\s+/);
 
-  if (command === '/start' && code) {
+  if (command === '/start' && code?.startsWith('f_')) {
+    // A friend outside the app, invited from Settings → Telegram → Invite a friend
+    const who = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(' ') || message.from?.username || 'Friend';
+    const { data: pairName } = await supabase.rpc('telegram_follow', { code: code.slice(2), chat, follower_name: who });
+    await telegram('sendMessage', {
+      chat_id: chat,
+      text: pairName ? `Welcome! 🐾 You'll get every pet from “${pairName}” right here.\n\nSend /stop to unsubscribe.` : 'This invite was already used or has expired. Ask for a new one.',
+    });
+  } else if (command === '/start' && code) {
     const { data: name } = await supabase.rpc('telegram_link', { code, chat });
     await telegram('sendMessage', {
       chat_id: chat,
@@ -26,7 +34,7 @@ export async function POST(request) {
     });
   } else if (command === '/stop') {
     await supabase.rpc('telegram_unlink', { chat });
-    await telegram('sendMessage', { chat_id: chat, text: 'Disconnected. You can connect again from Us → Settings.' });
+    await telegram('sendMessage', { chat_id: chat, text: 'Done — no more pets from me. 🐾' });
   } else {
     await telegram('sendMessage', { chat_id: chat, text: HELLO });
   }
