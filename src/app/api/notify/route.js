@@ -16,10 +16,7 @@ const MESSAGES = {
   expense: { pref: 'new_event', body: (name, d) => `${name} added an expense: ${d.title ?? ''}`.trim(), url: '/expenses' },
 };
 
-/**
- * A new pet post also goes to Telegram: the partner's (if connected) and every friend who follows.
- * Returns a step-by-step report, shown by "Send a test to Telegram" in Settings.
- */
+/** "Send a test to Telegram" in Settings: forwards a post to everyone who gets our pets, with a step-by-step report. */
 async function forwardToTelegram(supabase, postId, myName) {
   if (!isTelegramConfigured()) return { error: 'TELEGRAM_BOT_TOKEN is missing on the server' };
   const [{ data: partnerChat }, { data: followers, error: followersError }] = await Promise.all([
@@ -92,10 +89,8 @@ export async function POST(request) {
     supabase.rpc('partner_push_targets'),
   ]);
   const allowed = (targets ?? []).filter((t) => t.prefs?.[message.pref] !== false);
-  const [dead] = await Promise.all([
-    sendPushes(allowed, { title: 'Us', body: message.body(me?.name ?? 'Your friend', details), url: message.url }),
-    kind === 'pet_photo' && details.postId ? forwardToTelegram(supabase, details.postId, me?.name) : null,
-  ]);
+  // Pet photos reach Telegram from the database (see /api/telegram/forward), not from here.
+  const dead = await sendPushes(allowed, { title: 'Us', body: message.body(me?.name ?? 'Your friend', details), url: message.url });
   await Promise.all(dead.map((endpoint) => supabase.rpc('forget_push_endpoint', { dead_endpoint: endpoint })));
   return Response.json({ sent: allowed.length - dead.length });
 }
