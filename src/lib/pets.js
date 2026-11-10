@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 import { mediaType, removeMedia, signedUrls, uploadMedia } from './media';
 import { useLive } from './useLive';
 import { dayKey, streak } from './dates';
-import { notify } from './push';
+import { forwardToTelegram, notify } from './push';
 
 export const REACTIONS = ['❤️', '😂', '🥹', '😍', '🔥', '👍', '😮', '😢', '🐾', '🎉'];
 
@@ -78,11 +78,15 @@ export async function createPost({ files = [], catIds = [], caption = '', me, pa
   if (files.length) {
     const rows = [];
     try {
-      for (const [i, file] of files.entries()) {
-        const url = await uploadMedia(file, pair.id, `posts/${post.id}`);
-        rows.push({ post_id: post.id, url, type: mediaType(file), order: i });
-        onProgress?.((i + 1) / files.length);
-      }
+      // All at once: several photos go up about as fast as one
+      let done = 0;
+      await Promise.all(
+        files.map(async (file, i) => {
+          const url = await uploadMedia(file, pair.id, `posts/${post.id}`);
+          rows.push({ post_id: post.id, url, type: mediaType(file), order: i });
+          onProgress?.(++done / files.length);
+        })
+      );
       const { error: mediaError } = await supabase.from('cat_post_media').insert(rows);
       if (mediaError) throw mediaError;
     } catch (e) {
@@ -95,7 +99,8 @@ export async function createPost({ files = [], catIds = [], caption = '', me, pa
   if (catIds.length) await supabase.from('cat_post_cats').insert(catIds.map((cat_id) => ({ post_id: post.id, cat_id })));
   if (files.length) {
     await supabase.from('activity').insert({ pair_id: pair.id, actor_id: me.id, kind: 'pet_photo', target_id: post.id });
-    notify('pet_photo'); // Telegram gets it from the database trigger
+    notify('pet_photo');
+    await forwardToTelegram(post.id);
   } else {
     notify('message', { text: post.caption });
   }

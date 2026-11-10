@@ -124,7 +124,7 @@ function ReactionPill({ reactions, mine }) {
  * One chat message. Mine on the right in the accent color, hers on the left.
  * Tap photo = fullscreen, double tap = heart, long press = reactions & delete.
  */
-export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onMenu, onComments }) {
+export default function MessageBubble({ post, pets, showAuthor, separate, onOpenMedia, onMenu, onComments }) {
   const { me, partner } = useSession();
   const mine = post.authorId === me.id;
   const author = mine ? me : partner;
@@ -135,7 +135,8 @@ export default function MessageBubble({ post, pets, showAuthor, onOpenMedia, onM
   const petLabel = tagged.length ? tagged.join(' & ') : hasMedia ? 'Unidentified pet' : null;
 
   return (
-    <div className={`flex items-end gap-2 px-3 ${mine ? 'flex-row-reverse' : ''} ${showAuthor ? 'mt-3' : 'mt-1'}`}>
+    // A photo with its comments is one block; a clear gap before the next one
+    <div className={`flex items-end gap-2 px-3 ${mine ? 'flex-row-reverse' : ''} ${separate ? 'mt-8' : showAuthor ? 'mt-3' : 'mt-1'}`}>
       {!mine && (
         <span className={`w-8 shrink-0 ${showAuthor ? '' : 'invisible'}`}>
           <Avatar who="her" name={author?.name} src={author?.avatar} />

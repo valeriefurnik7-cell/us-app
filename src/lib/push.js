@@ -105,3 +105,23 @@ export function notify(kind, details = {}) {
     }).catch(() => {});
   });
 }
+
+/**
+ * A new pet photo goes on to Telegram (friends who follow our pets). Awaited by the posting flow so
+ * the phone doesn't drop it; gives up quietly after 30 s — the photo is in the chat either way.
+ */
+export async function forwardToTelegram(postId) {
+  if (isDemo) return null;
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return null;
+  return fetch('/api/telegram/forward', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ post_id: postId }),
+    keepalive: true,
+    signal: AbortSignal.timeout?.(30000),
+  })
+    .then((r) => r.json())
+    .catch(() => null);
+}

@@ -3,7 +3,8 @@
 import { supabase } from './supabase';
 import { distanceKm } from './home';
 
-const SESSION_FLAG = 'locationChecked';
+const CHECKED_AT = 'locationCheckedAt';
+const RECHECK_MS = 6 * 60 * 60 * 1000;
 const MOVE_KM = 15; // smaller moves don't change the city
 
 function currentPosition() {
@@ -40,12 +41,24 @@ export async function syncLocation(me, { force = false } = {}) {
   return city;
 }
 
-/** Once per app launch, if she allowed it. Silent: no prompts beyond the system one. */
+/** Only when location is already allowed — the app never pops the system question by itself. */
+async function locationAllowed() {
+  try {
+    const status = await navigator.permissions?.query({ name: 'geolocation' });
+    return status?.state === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+/** Every few hours at most, silently, and only if she already allowed location. */
 export async function autoSyncLocation(me) {
   if (me.notify_prefs?.auto_location === false) return null;
+  if (!(await locationAllowed())) return null;
   try {
-    if (sessionStorage.getItem(SESSION_FLAG)) return null;
-    sessionStorage.setItem(SESSION_FLAG, '1');
+    const last = Number(localStorage.getItem(CHECKED_AT) ?? 0);
+    if (Date.now() - last < RECHECK_MS) return null;
+    localStorage.setItem(CHECKED_AT, String(Date.now()));
   } catch {}
   try {
     return await syncLocation(me);

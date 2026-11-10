@@ -78,6 +78,23 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* PetLoader: the pet hops, its shadow shrinks while it's up, paw prints walk past */
+@keyframes pet-hop {
+  0%, 100% { transform: translateY(0) scale(1.08, 0.92); }
+  15% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-34px) scale(0.96, 1.05) rotate(-6deg); }
+  85% { transform: translateY(0) scale(1, 1); }
+}
+@keyframes pet-shadow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.55); opacity: 0.5; }
+}
+@keyframes paw-step {
+  0%, 10% { opacity: 0; }
+  20%, 60% { opacity: 1; }
+  80%, 100% { opacity: 0; }
+}
+
 @keyframes heart-burst {
   0% {
     opacity: 0;
@@ -204,7 +221,9 @@ body:has(.fixed.z-40.bg-black\/50:not(.invisible)) .app-bottom-bar {
  * sits right on top of the keyboard instead of floating somewhere above or hiding under it.
  */
 html[data-keyboard] .chat-composer {
-  bottom: calc(var(--kb) + 6px) !important;
+  /* From the top of what's visible down to just above the keyboard (the composer is 52px tall) */
+  top: calc(var(--vvt) + var(--vvh) - 52px - 6px) !important;
+  bottom: auto !important;
   transition: none;
 }
 html[data-keyboard] .chat-page {

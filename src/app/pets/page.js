@@ -188,6 +188,7 @@ export default function PetsPage() {
                 post={post}
                 pets={petList}
                 showAuthor={newDay || prev.authorId !== post.authorId}
+                separate={!newDay && (post.media.length > 0 || prev.media.length > 0)}
                 onOpenMedia={(items, index) => setViewer({ items, index })}
                 onMenu={setMenuPost}
                 onComments={setCommentsFor}

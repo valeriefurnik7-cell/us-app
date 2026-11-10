@@ -1,15 +1,19 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BlockFooter, BlockTitle, Chip, Link, List, ListInput, Progressbar, Sheet, Toolbar } from 'konsta/react';
-import { Camera, PlayFill } from 'framework7-icons/react';
+import { BlockFooter, BlockTitle, Chip, Link, Sheet, Toolbar } from 'konsta/react';
+import { PlayFill, Plus, Xmark } from 'framework7-icons/react';
 import { useSession } from '../SessionProvider';
 import { createPost } from '@/lib/pets';
 import { errorMessage } from '@/lib/supabase';
 
 const MAX_VIDEO_MB = 50;
 
-function Previews({ files }) {
+const tooBig = (f) => f.type.startsWith('video/') && f.size > MAX_VIDEO_MB * 1024 * 1024;
+const MAX_FILES = 10; // Telegram albums stop at 10 too
+
+/** The picked photos as a grid: × removes one, the last tile adds more. */
+function PhotoGrid({ files, onRemove, onAdd, disabled }) {
   const [urls, setUrls] = useState([]);
   useEffect(() => {
     const next = files.map((f) => URL.createObjectURL(f));
@@ -18,31 +22,49 @@ function Previews({ files }) {
   }, [files]);
 
   return (
-    <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
+    <div className="grid grid-cols-3 gap-1.5 px-4">
       {files.map((f, i) => (
-        <div key={i} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-control bg-surface-2">
+        <div key={`${f.name}-${f.size}-${i}`} className="relative aspect-square overflow-hidden rounded-xl bg-surface-2">
           {urls[i] &&
             (f.type.startsWith('video/') ? (
               <>
-                <video src={urls[i]} muted playsInline className="h-full w-full object-cover" />
-                <PlayFill className="absolute inset-0 m-auto text-[28px] text-white" />
+                <video src={`${urls[i]}#t=0.1`} muted playsInline className="h-full w-full object-cover" />
+                <PlayFill className="absolute inset-0 m-auto text-[28px] text-white drop-shadow" />
               </>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={urls[i]} alt="" className="h-full w-full object-cover" />
             ))}
+          {!disabled && (
+            <button
+              type="button"
+              onClick={() => onRemove(i)}
+              aria-label="Remove"
+              className="absolute end-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur"
+            >
+              <Xmark className="text-[13px]" />
+            </button>
+          )}
         </div>
       ))}
+      {files.length < MAX_FILES && !disabled && (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-text-secondary/30 text-primary active:bg-surface-2"
+        >
+          <Plus className="text-[26px]" />
+          <span className="text-caption font-semibold">{files.length ? 'Add more' : 'Add photos'}</span>
+        </button>
+      )}
     </div>
   );
 }
 
-const tooBig = (f) => f.type.startsWith('video/') && f.size > MAX_VIDEO_MB * 1024 * 1024;
-
 function UploadForm({ initialFiles, cats, defaultCatId, onClose }) {
   const { me, pair } = useSession();
   const input = useRef(null);
-  const [files, setFiles] = useState(() => initialFiles.filter((f) => !tooBig(f)));
+  const [files, setFiles] = useState(() => initialFiles.filter((f) => !tooBig(f)).slice(0, MAX_FILES));
   const [catIds, setCatIds] = useState(defaultCatId ? [defaultCatId] : cats.length === 1 ? [cats[0].id] : []);
   const [caption, setCaption] = useState('');
   const [progress, setProgress] = useState(null);
@@ -50,9 +72,11 @@ function UploadForm({ initialFiles, cats, defaultCatId, onClose }) {
 
   function pick(e) {
     const picked = [...e.target.files];
+    e.target.value = '';
     if (!picked.length) return;
     setError(picked.some(tooBig) ? `Videos up to ${MAX_VIDEO_MB} MB` : null);
-    setFiles(picked.filter((f) => !tooBig(f)));
+    // Added to what's already there, not instead of it
+    setFiles((current) => [...current, ...picked.filter((f) => !tooBig(f))].slice(0, MAX_FILES));
   }
 
   const toggleCat = (id) => setCatIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
@@ -70,6 +94,13 @@ function UploadForm({ initialFiles, cats, defaultCatId, onClose }) {
   }
 
   const busy = progress !== null;
+  const videos = files.filter((f) => f.type.startsWith('video/')).length;
+  const what = videos === files.length ? (files.length === 1 ? 'video' : 'videos') : files.length === 1 ? 'photo' : 'photos';
+  const label = busy
+    ? progress < 1
+      ? `Sending… ${Math.round(progress * files.length)} of ${files.length}`
+      : 'Almost there…'
+    : `Send ${files.length > 1 ? `${files.length} ` : ''}${what}`;
 
   return (
     <>
@@ -77,27 +108,18 @@ function UploadForm({ initialFiles, cats, defaultCatId, onClose }) {
         <Link toolbar onClick={onClose} className={busy ? 'pointer-events-none opacity-40' : ''}>
           Cancel
         </Link>
-        <Link toolbar onClick={post} className={busy || !files.length ? 'pointer-events-none opacity-40' : ''}>
-          <b>Send</b>
-        </Link>
+        <span className="text-body font-semibold">New post</span>
+        <span className="w-14" />
       </Toolbar>
-      {busy && <Progressbar progress={progress} />}
 
-      <div className="max-h-[75vh] overflow-auto pt-3 pb-safe-4">
+      <div className="max-h-[75vh] overflow-auto pt-3">
         <input ref={input} type="file" accept="image/*,video/*" multiple hidden onChange={pick} />
-        {files.length ? (
-          <Previews files={files} />
-        ) : null}
-        <div className="px-4 pt-3">
-          <button
-            type="button"
-            onClick={() => input.current?.click()}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-control border border-dashed border-text-secondary/40 text-subhead text-primary"
-          >
-            <Camera className="text-[20px]" />
-            {files.length ? 'Choose other photos' : 'Choose photos or videos'}
-          </button>
-        </div>
+        <PhotoGrid
+          files={files}
+          disabled={busy}
+          onAdd={() => input.current?.click()}
+          onRemove={(i) => setFiles((current) => current.filter((_, j) => j !== i))}
+        />
 
         {cats.length > 0 && (
           <>
@@ -117,11 +139,28 @@ function UploadForm({ initialFiles, cats, defaultCatId, onClose }) {
           </>
         )}
 
-        <BlockTitle>Caption</BlockTitle>
-        <List strong inset>
-          <ListInput type="textarea" placeholder="Optional" value={caption} onChange={(e) => setCaption(e.target.value)} inputClassName="min-h-16" />
-        </List>
+        <div className="px-4 pt-5">
+          <input
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Add a caption…"
+            enterKeyHint="done"
+            className="h-11 w-full rounded-full bg-surface-2 px-4 text-body outline-none placeholder:text-text-secondary"
+          />
+        </div>
         {error && <BlockFooter className="text-danger!">{error}</BlockFooter>}
+
+        <div className="px-4 pt-4 pb-safe-4">
+          <button
+            type="button"
+            onClick={post}
+            disabled={busy || !files.length}
+            className="relative h-12 w-full overflow-hidden rounded-full bg-accent text-body font-semibold text-white disabled:opacity-60"
+          >
+            {busy && <span className="absolute inset-y-0 start-0 bg-white/25 transition-[width] duration-300" style={{ width: `${Math.max(8, progress * 100)}%` }} />}
+            <span className="relative">{files.length ? label : 'Add a photo first'}</span>
+          </button>
+        </div>
       </div>
     </>
   );
