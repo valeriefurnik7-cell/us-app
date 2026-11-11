@@ -37,39 +37,24 @@ const NAMES = {
 };
 const nameFor = (path, titles) => titles[path] ?? NAMES[path] ?? (path.startsWith('/plans/trips/') ? 'Trip' : path.startsWith('/pets/') ? 'Pet' : 'Back');
 
-/**
- * Glues inputs to the keyboard: exposes the visible area (--vvt its top, --vvh its height) and the
- * keyboard height (--kb). iOS also scrolls the whole page when an input gets focus, so anything that
- * must sit on the keyboard is positioned from the visible area's top, which stays right in both cases.
- */
+/** Glues inputs to the keyboard: exposes its height (--kb) and the visible height (--vvh). */
 function useKeyboardInsets() {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const typing = () => {
-      const el = document.activeElement;
-      return Boolean(el?.matches?.('textarea, [contenteditable="true"], input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range])'));
-    };
     const update = () => {
       const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       const root = document.documentElement.style;
       root.setProperty('--kb', `${Math.round(kb)}px`);
       root.setProperty('--vvh', `${Math.round(vv.height)}px`);
-      root.setProperty('--vvt', `${Math.round(vv.offsetTop)}px`);
-      document.documentElement.toggleAttribute('data-keyboard', kb > 80 || (typing() && vv.height < window.screen.height * 0.75));
+      document.documentElement.toggleAttribute('data-keyboard', kb > 80);
     };
-    // The keyboard animates in; catch where it settles too.
-    const later = () => [0, 100, 300, 600].forEach((ms) => setTimeout(update, ms));
     update();
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
-    document.addEventListener('focusin', later);
-    document.addEventListener('focusout', later);
     return () => {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
-      document.removeEventListener('focusin', later);
-      document.removeEventListener('focusout', later);
     };
   }, []);
 }

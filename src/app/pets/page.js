@@ -18,7 +18,8 @@ import { dayKey } from '@/lib/dates';
 
 const NO_MESSAGES = [];
 
-// Full-screen chat: no tabbar, the composer sits right above the home indicator.
+// Full-screen chat: no tabbar. The composer is part of the page (not floating), stuck to its bottom,
+// so iOS itself lifts it above the keyboard — like any text field on a web page.
 const COMPOSER_BOTTOM = 'bottom-[calc(var(--k-safe-area-bottom)+10px)]';
 
 function dayLabel(iso) {
@@ -83,7 +84,7 @@ function Composer({ onPhoto, onSend }) {
   return (
     <form
       onSubmit={send}
-      className={`app-bottom-bar chat-composer fixed inset-x-0 z-20 mx-4 flex items-center gap-1 rounded-full bg-ios-light-glass p-1 shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass ${COMPOSER_BOTTOM}`}
+      className={`chat-composer sticky z-20 mx-4 mt-3 mb-[calc(var(--k-safe-area-bottom)+10px)] flex shrink-0 items-center gap-1 rounded-full bg-ios-light-glass p-1 shadow-ios-light-glass backdrop-blur-lg dark:bg-ios-dark-glass dark:shadow-ios-dark-glass ${COMPOSER_BOTTOM}`}
     >
       <button type="button" onClick={onPhoto} aria-label="Send photo" className="flex h-11 w-11 shrink-0 items-center justify-center text-primary">
         <Camera className="text-[24px]" />
@@ -145,7 +146,7 @@ export default function PetsPage() {
   }, [messages, me.id]);
 
   return (
-    <Screen className="chat-page pb-[calc(var(--k-safe-area-bottom)+80px)]">
+    <Screen className="chat-page flex flex-col">
       <InnerNavbar
         large={false}
         title={
@@ -210,6 +211,8 @@ export default function PetsPage() {
         })
       )}
 
+      {/* Pushes the composer down when there are only a few messages */}
+      <div className="flex-1" />
       <Composer onPhoto={picker.open} onSend={(caption) => createPost({ caption, me, pair }).then(feed.reload)} />
 
       <UploadSheet
