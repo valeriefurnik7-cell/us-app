@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Segmented, SegmentedButton } from 'konsta/react';
-import { CheckmarkSealFill, ChevronDown, Ellipsis, Gift, LockFill, Plus } from 'framework7-icons/react';
+import { CheckmarkSealFill, Ellipsis, Gift, LockFill, Plus } from 'framework7-icons/react';
 import { EmptyState } from '../Screen';
 import { useSession } from '../SessionProvider';
 import { formatPrice } from './GiftDetail';
@@ -11,6 +11,7 @@ import { GIFT_STATUSES } from '@/lib/wishlist';
 const ALL = '__all';
 const SECRET = '__secret';
 const GIVING = '__giving';
+const DONE = '__done';
 
 /** Small tile in the lists row, like the counters on an Ohmywishes profile. */
 function ListTile({ label, count, active, onClick, icon }) {
@@ -63,7 +64,13 @@ function WishCard({ gift, mine, onOpen, onMenu }) {
             <LockFill className="text-[12px]" />
           </span>
         )}
-        {status && (
+        {(gift.fulfilled_at || status?.id === 'given') && (
+          <span className="absolute bottom-2 start-2 flex items-center gap-1 rounded-full bg-together px-2.5 py-1 text-caption font-semibold text-black">
+            <CheckmarkSealFill className="text-[12px]" />
+            Came true
+          </span>
+        )}
+        {status && status.id !== 'given' && (
           <span className="absolute start-2 top-2 rounded-full bg-accent px-2.5 py-1 text-caption font-semibold text-white">
             {status.id === 'reserved' ? 'You’re giving' : status.label}
           </span>
@@ -90,7 +97,6 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo
   }
   const [newList, setNewList] = useState(null);
   const [extraLists, setExtraLists] = useState([]); // lists created here before their first wish
-  const [showDone, setShowDone] = useState(false);
 
   const mineView = whose === 'mine';
   const theirs = gifts.filter((g) => (mineView ? g.wisher_id === me.id : g.wisher_id !== me.id));
@@ -98,7 +104,9 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo
   const active = theirs.filter((g) => !g.fulfilled_at && g.reservation?.status !== 'given');
   const lists = [...new Set([...active.map((g) => g.list).filter(Boolean), ...(mineView ? extraLists : [])])].sort();
 
-  const shown = active.filter((g) => {
+  // Last one un-done: nothing left to show under "Came true"
+  if (filter === DONE && !done.length && !loading) setFilter(ALL);
+  const shown = filter === DONE ? done : active.filter((g) => {
     if (filter === ALL) return true;
     if (filter === SECRET) return g.is_secret;
     if (filter === GIVING) return Boolean(g.reservation);
@@ -127,6 +135,15 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo
       {/* Lists row */}
       <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
         <ListTile label={mineView ? 'My wishes' : 'All wishes'} count={active.length} active={filter === ALL} onClick={() => setFilter(ALL)} />
+        {done.length > 0 && (
+          <ListTile
+            label="Came true"
+            icon={<CheckmarkSealFill className={`shrink-0 text-[12px] ${filter === DONE ? '' : 'text-together'}`} />}
+            count={done.length}
+            active={filter === DONE}
+            onClick={() => setFilter(DONE)}
+          />
+        )}
         {lists.map((l) => (
           <ListTile key={l} label={l} count={active.filter((g) => g.list === l).length} active={filter === l} onClick={() => setFilter(l)} />
         ))}
@@ -204,32 +221,6 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo
             <WishCard key={g.id} gift={g} mine={mineView} onOpen={onOpen} onMenu={onMenu} />
           ))}
         </div>
-      )}
-
-      {done.length > 0 && (
-        <section className="mx-4 mt-6">
-          <button type="button" onClick={() => setShowDone(!showDone)} className="flex h-11 w-full items-center justify-between px-1">
-            <span className="flex items-center gap-1.5 text-caption font-semibold tracking-wide text-text-secondary uppercase">
-              <CheckmarkSealFill className="text-[14px] text-together" />
-              Came true · {done.length}
-            </span>
-            <ChevronDown className={`text-[16px] text-text-secondary transition-transform ${showDone ? 'rotate-180' : ''}`} />
-          </button>
-          {showDone && (
-            <ul className="overflow-hidden rounded-card bg-surface">
-              {done.map((g) => (
-                <li key={g.id}>
-                  <button type="button" onClick={() => onOpen(g)} className="flex min-h-12 w-full items-center justify-between gap-3 border-b border-text-secondary/15 px-4 text-start last:border-0">
-                    <span className="truncate text-body">{g.title}</span>
-                    <span className="shrink-0 text-subhead text-text-secondary">
-                      {new Date(g.fulfilled_at ?? g.reservation.given_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       )}
 
       {/* Room to scroll the last wishes out from under the floating button */}
