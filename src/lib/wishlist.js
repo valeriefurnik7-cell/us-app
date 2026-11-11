@@ -61,6 +61,10 @@ export async function deleteGift(gift) {
   return supabase.from('gifts').delete().eq('id', gift.id);
 }
 
+/** The wish came true (or, with done = false, not yet after all). */
+export const fulfillGift = (gift, done = true) =>
+  supabase.from('gifts').update({ fulfilled_at: done ? new Date().toISOString() : null }).eq('id', gift.id);
+
 // No activity row here on purpose: reservations must never show up in the friend's feed.
 export const reserveGift = (gift, me) => supabase.from('gift_reservations').insert({ gift_id: gift.id, giver_id: me.id });
 export const unreserveGift = (gift) => supabase.from('gift_reservations').delete().eq('gift_id', gift.id);

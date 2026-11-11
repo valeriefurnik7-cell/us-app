@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Segmented, SegmentedButton } from 'konsta/react';
-import { ChevronDown, Ellipsis, Gift, LockFill, Plus } from 'framework7-icons/react';
+import { CheckmarkSealFill, ChevronDown, Ellipsis, Gift, LockFill, Plus } from 'framework7-icons/react';
 import { EmptyState } from '../Screen';
 import { useSession } from '../SessionProvider';
 import { formatPrice } from './GiftDetail';
@@ -90,12 +90,12 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo
   }
   const [newList, setNewList] = useState(null);
   const [extraLists, setExtraLists] = useState([]); // lists created here before their first wish
-  const [showGiven, setShowGiven] = useState(false);
+  const [showDone, setShowDone] = useState(false);
 
   const mineView = whose === 'mine';
   const theirs = gifts.filter((g) => (mineView ? g.wisher_id === me.id : g.wisher_id !== me.id));
-  const given = theirs.filter((g) => g.reservation?.status === 'given');
-  const active = theirs.filter((g) => g.reservation?.status !== 'given');
+  const done = theirs.filter((g) => g.fulfilled_at || g.reservation?.status === 'given');
+  const active = theirs.filter((g) => !g.fulfilled_at && g.reservation?.status !== 'given');
   const lists = [...new Set([...active.map((g) => g.list).filter(Boolean), ...(mineView ? extraLists : [])])].sort();
 
   const shown = active.filter((g) => {
@@ -203,35 +203,26 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo
           {shown.map((g) => (
             <WishCard key={g.id} gift={g} mine={mineView} onOpen={onOpen} onMenu={onMenu} />
           ))}
-          {mineView && (
-            <button
-              type="button"
-              onClick={addToCurrent}
-              className="flex aspect-[3/4] flex-col items-center justify-center gap-2 rounded-card border-2 border-dashed border-text-secondary/25 text-subhead font-semibold text-primary"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-white">
-                <Plus className="text-[22px]" />
-              </span>
-              Add a wish
-            </button>
-          )}
         </div>
       )}
 
-      {!mineView && given.length > 0 && (
+      {done.length > 0 && (
         <section className="mx-4 mt-6">
-          <button type="button" onClick={() => setShowGiven(!showGiven)} className="flex h-11 w-full items-center justify-between px-1">
-            <span className="text-caption font-semibold tracking-wide text-text-secondary uppercase">Already given · {given.length}</span>
-            <ChevronDown className={`text-[16px] text-text-secondary transition-transform ${showGiven ? 'rotate-180' : ''}`} />
+          <button type="button" onClick={() => setShowDone(!showDone)} className="flex h-11 w-full items-center justify-between px-1">
+            <span className="flex items-center gap-1.5 text-caption font-semibold tracking-wide text-text-secondary uppercase">
+              <CheckmarkSealFill className="text-[14px] text-together" />
+              Came true · {done.length}
+            </span>
+            <ChevronDown className={`text-[16px] text-text-secondary transition-transform ${showDone ? 'rotate-180' : ''}`} />
           </button>
-          {showGiven && (
+          {showDone && (
             <ul className="overflow-hidden rounded-card bg-surface">
-              {given.map((g) => (
+              {done.map((g) => (
                 <li key={g.id}>
-                  <button type="button" onClick={() => onOpen(g)} className="flex min-h-12 w-full items-center justify-between border-b border-text-secondary/15 px-4 text-start last:border-0">
+                  <button type="button" onClick={() => onOpen(g)} className="flex min-h-12 w-full items-center justify-between gap-3 border-b border-text-secondary/15 px-4 text-start last:border-0">
                     <span className="truncate text-body">{g.title}</span>
                     <span className="shrink-0 text-subhead text-text-secondary">
-                      {new Date(g.reservation.given_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {new Date(g.fulfilled_at ?? g.reservation.given_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   </button>
                 </li>
@@ -239,6 +230,20 @@ export default function GiftsTab({ gifts, loading, onOpen, onAdd, onMenu, jumpTo
             </ul>
           )}
         </section>
+      )}
+
+      {/* Room to scroll the last wishes out from under the floating button */}
+      {mineView && <div className="h-16" />}
+      {/* Always in reach: floats right above the tabbar */}
+      {mineView && (
+        <button
+          type="button"
+          onClick={addToCurrent}
+          className="app-bottom-bar fixed inset-x-0 z-30 mx-auto flex h-12 w-fit items-center gap-2 rounded-full bg-accent ps-4 pe-5 text-body font-semibold text-white shadow-lg shadow-accent/30 active:scale-95 bottom-[calc(max(8px,calc(var(--k-safe-area-bottom)-6px))+80px)]"
+        >
+          <Plus className="text-[20px]" />
+          Add a wish
+        </button>
       )}
     </>
   );

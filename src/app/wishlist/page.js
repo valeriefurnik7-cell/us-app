@@ -10,7 +10,7 @@ import GiftDetail from '@/components/wishlist/GiftDetail';
 import WatchTab from '@/components/wishlist/WatchTab';
 import { WatchAddSheet, WatchDetailSheet } from '@/components/wishlist/WatchSheets';
 import DreamsTab from '@/components/wishlist/DreamsTab';
-import { WATCH_STATUSES, deleteGift, deleteWatchItem, updateWatchItem, useDreams, useGifts, useWatch } from '@/lib/wishlist';
+import { WATCH_STATUSES, deleteGift, fulfillGift, deleteWatchItem, updateWatchItem, useDreams, useGifts, useWatch } from '@/lib/wishlist';
 import { useSession } from '@/components/SessionProvider';
 
 const SEGMENTS = [
@@ -138,6 +138,15 @@ export default function WishlistPage() {
             }}
           >
             Edit
+          </ActionsButton>
+          <ActionsButton
+            onClick={async () => {
+              await fulfillGift(giftMenu, !giftMenu.fulfilled_at);
+              setGiftMenu(null);
+              gifts.reload();
+            }}
+          >
+            {giftMenu?.fulfilled_at ? 'Not fulfilled yet' : 'It came true!'}
           </ActionsButton>
           <ActionsButton
             className="text-danger!"

@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { Actions, ActionsButton, ActionsGroup, ActionsLabel, Button, Sheet, Toast } from 'konsta/react';
-import { ArrowUpRightSquare, Checkmark, DocOnDoc, Gift, LockFill, Pencil, Xmark } from 'framework7-icons/react';
+import { ArrowUpRightSquare, Checkmark, CheckmarkSealFill, DocOnDoc, Gift, LockFill, Pencil, Xmark } from 'framework7-icons/react';
 import Avatar from '../Avatar';
 import { useSession } from '../SessionProvider';
-import { GIFT_STATUSES, deleteGift, reserveGift, unreserveGift, updateReservation } from '@/lib/wishlist';
+import { GIFT_STATUSES, deleteGift, fulfillGift, reserveGift, unreserveGift, updateReservation } from '@/lib/wishlist';
 import { formatAddress } from '@/lib/address';
 import { supabase } from '@/lib/supabase';
 
@@ -145,7 +145,43 @@ function Detail({ gift, onClose, onEdit }) {
           )}
         </div>
 
-        {!mine &&
+        {gift.fulfilled_at ? (
+          <div className="mx-4 mt-6 flex items-center gap-3 rounded-card bg-together/15 p-4">
+            <CheckmarkSealFill className="shrink-0 text-[28px] text-together" />
+            <div className="min-w-0 flex-1">
+              <p className="text-body font-semibold">Came true!</p>
+              <p className="text-subhead text-text-secondary">
+                {new Date(gift.fulfilled_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                await fulfillGift(gift, false);
+                onClose(true, true);
+              }}
+              className="shrink-0 text-subhead text-primary"
+            >
+              Undo
+            </button>
+          </div>
+        ) : (
+          <div className="mx-4 mt-6">
+            <button
+              type="button"
+              onClick={async () => {
+                await fulfillGift(gift);
+                onClose(true, true);
+              }}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-together/15 text-body font-semibold text-together"
+            >
+              <CheckmarkSealFill className="text-[20px]" />
+              {mine ? 'My wish came true' : 'Wish came true'}
+            </button>
+          </div>
+        )}
+
+        {!mine && !gift.fulfilled_at &&
           (gift.reservation ? (
             <>
               <GiftProgress gift={gift} onChanged={() => onClose(true, true)} />
@@ -154,7 +190,7 @@ function Detail({ gift, onClose, onEdit }) {
               </button>
             </>
           ) : (
-            <div className="mx-4 mt-6">
+            <div className="mx-4 mt-3">
               <button
                 type="button"
                 onClick={async () => {
@@ -170,7 +206,7 @@ function Detail({ gift, onClose, onEdit }) {
           ))}
 
         {mine && (
-          <button type="button" onClick={() => setConfirm('delete')} className="mx-4 mt-6 h-12 w-[calc(100%-2rem)] rounded-full bg-surface text-body text-danger">
+          <button type="button" onClick={() => setConfirm('delete')} className="mx-4 mt-3 h-12 w-[calc(100%-2rem)] rounded-full bg-surface text-body text-danger">
             Delete wish
           </button>
         )}
