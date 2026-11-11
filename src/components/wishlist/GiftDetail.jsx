@@ -79,6 +79,12 @@ function Detail({ gift, onClose, onEdit }) {
   const { me, partner } = useSession();
   const mine = gift.wisher_id === me.id;
   const [confirm, setConfirm] = useState(null); // 'delete' | 'unreserve'
+  const [fulfillError, setFulfillError] = useState(null);
+  async function setFulfilled(done) {
+    const { error } = await fulfillGift(gift, done);
+    setFulfillError(error ? `Couldn’t save: ${error.message}` : null);
+    if (!error) onClose(true, true);
+  }
   const price = formatPrice(gift);
 
   return (
@@ -156,10 +162,7 @@ function Detail({ gift, onClose, onEdit }) {
             </div>
             <button
               type="button"
-              onClick={async () => {
-                await fulfillGift(gift, false);
-                onClose(true, true);
-              }}
+              onClick={() => setFulfilled(false)}
               className="shrink-0 text-subhead text-primary"
             >
               Undo
@@ -169,15 +172,13 @@ function Detail({ gift, onClose, onEdit }) {
           <div className="mx-4 mt-6">
             <button
               type="button"
-              onClick={async () => {
-                await fulfillGift(gift);
-                onClose(true, true);
-              }}
+              onClick={() => setFulfilled(true)}
               className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-together/15 text-body font-semibold text-together"
             >
               <CheckmarkSealFill className="text-[20px]" />
               {mine ? 'My wish came true' : 'Wish came true'}
             </button>
+            {fulfillError && <p className="mt-2 text-center text-subhead text-danger">{fulfillError}</p>}
           </div>
         )}
 
