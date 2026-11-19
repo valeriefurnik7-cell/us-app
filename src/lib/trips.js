@@ -40,7 +40,7 @@ const LIST_TABLES = ['trips', 'trip_stops', 'trip_budgets', 'trip_expenses', 'qu
 async function loadTrips() {
   // Budgets and expenses come back filtered by RLS: mine, plus hers only where she shares them.
   const [{ data: trips }, { data: stops }, { data: budgets }, { data: expenses }, { data: quick }] = await Promise.all([
-    supabase.from('trips').select('*').order('start', { ascending: true, nullsFirst: false }),
+    supabase.from('trips').select('*').order('created_at', { ascending: false }), // newest first
     supabase.from('trip_stops').select('id, trip_id, visited'),
     supabase.from('trip_budgets').select('*'),
     supabase.from('trip_expenses').select('trip_id, profile_id, amount'),

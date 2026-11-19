@@ -62,7 +62,8 @@ export default function TripsTab({ adding, onAddClose }) {
   const list = trips.data?.trips ?? [];
   const quick = trips.data?.quick ?? [];
   const upcoming = list.filter((t) => t.status !== 'done');
-  const been = list.filter((t) => t.status === 'done');
+  // Past trips: the most recent journey on top
+  const been = list.filter((t) => t.status === 'done').sort((a, b) => (b.start ?? '').localeCompare(a.start ?? ''));
 
   return (
     <>
